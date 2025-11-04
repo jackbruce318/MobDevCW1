@@ -9,6 +9,9 @@ public class Currency {
     private String description;
     private String pubDate;
 
+    private double rate;
+
+
     public Currency(){
     }
 
@@ -24,6 +27,11 @@ public class Currency {
         return pubDate;
     }
 
+    public double getRate(){
+        return rate;
+    }
+
+
     public void setName(String name){
         this.name = name;
     }
@@ -35,6 +43,12 @@ public class Currency {
     public void setPubDate(String pubDate){
         this.pubDate = pubDate;
     }
+
+    public void setRate(double rate){
+        this.rate = rate;
+    }
+
+    @Override
 
     public String toString() {
         return name + " " + description + " " + pubDate;

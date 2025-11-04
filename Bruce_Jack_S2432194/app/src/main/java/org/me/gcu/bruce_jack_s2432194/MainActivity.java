@@ -37,7 +37,7 @@ import org.me.gcu.bruce_jack_s2432194.Currency;
 
 public class MainActivity extends AppCompatActivity implements OnClickListener {
     private TextView rawDataDisplay;
-    private Button startButton;
+
     private String result;
     private String url1="";
     private String urlSource="https://www.fx-exchange.com/gbp/rss.xml";
@@ -50,10 +50,10 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
         setContentView(R.layout.activity_main);
         // Set up the raw links to the graphical components
         rawDataDisplay = (TextView)findViewById(R.id.rawDataDisplay);
-        startButton = (Button)findViewById(R.id.startButton);
-        startButton.setOnClickListener(this);
+
         currencies = new ArrayList<Currency>();
 
+        startProgress();
 
         // More Code goes here
 
@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
 
     public void onClick(View aview)
     {
-        startProgress();
+
     }
 
     public void startProgress()
@@ -144,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
                             String temp = xpp.nextText();
                             //if  "description" tag is inside an item, or not
                             if(insideAnItem){ //the parser is currently inside an item block
+                                temp = temp.substring(temp.indexOf("/")+1);
                                 thisCurrency.setName(temp);
                                 Log.d("MyTag","Item name : " + temp);
                             }
@@ -153,8 +154,16 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
                         {
                             // Now just get the associated text
                             String temp = xpp.nextText();
+                            double thisRate = 0.0;
                             if(insideAnItem){ //the parser is currently inside a Thing block
                                 thisCurrency.setDescription(temp);
+
+                                int beginIndex = temp.indexOf("= ") + 2;
+                                int endIndex = temp.indexOf(" ", beginIndex);
+
+                                thisRate = Double.parseDouble(temp.substring(beginIndex, endIndex));
+                                thisCurrency.setRate(thisRate);
+
                                 Log.d("MyTag","Description is " + temp);
                             }
                         }
