@@ -30,6 +30,10 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.Date;
+
+import org.me.gcu.bruce_jack_s2432194.Currency;
 
 public class MainActivity extends AppCompatActivity implements OnClickListener {
     private TextView rawDataDisplay;
@@ -37,6 +41,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
     private String result;
     private String url1="";
     private String urlSource="https://www.fx-exchange.com/gbp/rss.xml";
+
+    private ArrayList<Currency> currencies;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +52,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
         rawDataDisplay = (TextView)findViewById(R.id.rawDataDisplay);
         startButton = (Button)findViewById(R.id.startButton);
         startButton.setOnClickListener(this);
+        currencies = new ArrayList<Currency>();
+
 
         // More Code goes here
 
@@ -104,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
             result = result.substring(0, i + 6);
 
             // Now that you have the xml data into result, you can parse it
+            Currency thisCurrency = null;
             try {
                 XmlPullParserFactory factory =
                         XmlPullParserFactory.newInstance();
@@ -112,6 +121,69 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
                 xpp.setInput( new StringReader( result ) );
 
                 //YOUR PARSING HERE!!!
+
+                int eventType = xpp.getEventType();
+                boolean insideAnItem = false; //flag indicating when the parser is traversing a new item
+
+
+                while (eventType != XmlPullParser.END_DOCUMENT)
+                {
+
+                    if(eventType == XmlPullParser.START_TAG) // Found a start tag
+                    {   // Check which start Tag we have as we'd do different things
+                        if (xpp.getName().equalsIgnoreCase("item"))
+                        {
+                            insideAnItem = true;
+                            //Start a new Thing object
+                            thisCurrency = new Currency();
+                            Log.d("MyTag","New Item found!");
+                        }
+                        else if (xpp.getName().equalsIgnoreCase("title"))
+                        {
+                            // Now just get the associated text
+                            String temp = xpp.nextText();
+                            //if  "description" tag is inside an item, or not
+                            if(insideAnItem){ //the parser is currently inside an item block
+                                thisCurrency.setName(temp);
+                                Log.d("MyTag","Item name : " + temp);
+                            }
+
+                        }
+                        else if (xpp.getName().equalsIgnoreCase("description"))
+                        {
+                            // Now just get the associated text
+                            String temp = xpp.nextText();
+                            if(insideAnItem){ //the parser is currently inside a Thing block
+                                thisCurrency.setDescription(temp);
+                                Log.d("MyTag","Description is " + temp);
+                            }
+                        }
+                        else if (xpp.getName().equalsIgnoreCase("pubDate"))
+                        {
+                            // Now just get the associated text
+                            String temp = xpp.nextText();
+                            if(insideAnItem){ //the parser is currently inside a Thing block
+                                thisCurrency.setPubDate(temp);
+                                Log.d("MyTag","Publish date is " + temp);
+                            }
+                        }
+
+                    }
+                    else if(eventType == XmlPullParser.END_TAG) // Found an end tag
+                    {
+                        if (xpp.getName().equalsIgnoreCase("item"))
+                        {
+                            currencies.add(thisCurrency); //add to collection
+                            insideAnItem = false;
+                            Log.d("MyTag","Item parsing completed!");
+                        }
+                    }
+
+
+
+
+                    eventType = xpp.next(); // Get the next event  before looping again
+                } // End of while
 
 
 
@@ -132,11 +204,21 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
             {
                 public void run() {
                     Log.d("UI thread", "I am the UI thread");
-                    rawDataDisplay.setText(result);
+
+                    String newRes = "";
+
+                    for(Currency c : currencies){
+                        newRes = newRes + c.toString() + "\n";
+                    }
+
+                    rawDataDisplay.setText(newRes);
                 }
             });
         }
 
     }
+
+
+
 
 }
