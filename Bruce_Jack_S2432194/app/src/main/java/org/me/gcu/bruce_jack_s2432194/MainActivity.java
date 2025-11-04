@@ -15,7 +15,9 @@ package org.me.gcu.bruce_jack_s2432194;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
 import androidx.appcompat.app.AppCompatActivity;
@@ -35,7 +37,7 @@ import java.util.Date;
 
 import org.me.gcu.bruce_jack_s2432194.Currency;
 
-public class MainActivity extends AppCompatActivity implements OnClickListener {
+public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener {
     private TextView rawDataDisplay;
 
     private String result;
@@ -44,24 +46,49 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
 
     private ArrayList<Currency> currencies;
 
+    private ListView myListView;
+
+    private String[] names;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // Set up the raw links to the graphical components
         rawDataDisplay = (TextView)findViewById(R.id.rawDataDisplay);
 
         currencies = new ArrayList<Currency>();
 
+        myListView = (ListView) findViewById(R.id.countryListView);
+        myListView.setOnItemClickListener(this);
+
+        names = new String[0];
+        CustomAdapter customAdapter = new CustomAdapter(getApplicationContext(), names);
+        myListView.setAdapter(customAdapter);
+
         startProgress();
 
-        // More Code goes here
+
 
     }
 
     public void onClick(View aview)
     {
 
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        Object clickedObject = parent.getItemAtPosition(position);
+
+        if (clickedObject != null) {
+            // LINE 82: Now this line is safe
+            String someValue = clickedObject.toString();
+
+            rawDataDisplay.setText(currencies.get(position).toString());
+        } else {
+            // Handle the case where the object is null, e.g., show an error message
+            Log.e("MainActivity", "Clicked object at position " + position + " is null.");
+        }
     }
 
     public void startProgress()
@@ -216,11 +243,23 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
 
                     String newRes = "";
 
-                    for(Currency c : currencies){
-                        newRes = newRes + c.toString() + "\n";
+                    if (currencies.isEmpty()) {
+                        rawDataDisplay.setText("Error: Failed to parse data.");
+                        return;
                     }
 
-                    rawDataDisplay.setText(newRes);
+                    names = new String[currencies.size()];
+                    for (int i = 0; i < currencies.size(); i++) {
+                        names[i] = currencies.get(i).getName();
+                    }
+
+                    CustomAdapter customAdapter = new CustomAdapter(getApplicationContext(), names);
+                    Log.d("Log",names[1]);
+
+                    myListView.setAdapter(customAdapter);
+
+                    rawDataDisplay.setText("Select a currency");
+
                 }
             });
         }

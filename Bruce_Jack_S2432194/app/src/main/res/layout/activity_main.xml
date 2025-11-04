@@ -12,11 +12,22 @@
             android:text="Contains Fx Currency Exchange data"
             android:textSize="20sp" />
 
+
+        <ListView
+            android:id="@+id/countryListView"
+            android:layout_width="fill_parent"
+            android:layout_height="290dp"
+            android:divider="@color/material_blue_grey_800"
+            android:dividerHeight="1dp"
+            android:footerDividersEnabled="false" >
+        </ListView>
+
         <TextView
             android:id="@+id/rawDataDisplay"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Raw Data is Displayed here"
+            android:text="Please select a currency"
+            android:paddingTop="25dp"
             android:textSize="20sp" />
 
 
