@@ -1,10 +1,5 @@
 package org.me.gcu.bruce_jack_s2432194;
 
-/*  Starter project for Mobile Platform Development - 1st diet 25/26
-    You should use this project as the starting point for your assignment.
-    This project simply reads the data from the required URL and displays the
-    raw data in a TextField
-*/
 
 //
 // Name                 Jack Bruce
@@ -15,7 +10,9 @@ package org.me.gcu.bruce_jack_s2432194;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
 import androidx.appcompat.app.AppCompatActivity;
@@ -32,36 +29,80 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Date;
+import android.widget.SearchView;
 
 import org.me.gcu.bruce_jack_s2432194.Currency;
 
-public class MainActivity extends AppCompatActivity implements OnClickListener {
+public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener {
     private TextView rawDataDisplay;
-    private Button startButton;
+
     private String result;
     private String url1="";
     private String urlSource="https://www.fx-exchange.com/gbp/rss.xml";
 
     private ArrayList<Currency> currencies;
 
+    private ListView myListView;
+
+    private String[] names;
+
+    private SearchView searchView;
+
+    private CustomAdapter customAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // Set up the raw links to the graphical components
         rawDataDisplay = (TextView)findViewById(R.id.rawDataDisplay);
-        startButton = (Button)findViewById(R.id.startButton);
-        startButton.setOnClickListener(this);
+
         currencies = new ArrayList<Currency>();
 
+        myListView = (ListView) findViewById(R.id.countryListView);
+        myListView.setOnItemClickListener(this);
 
-        // More Code goes here
+        searchView = (SearchView) findViewById(R.id.searchView);
+        searchView.setOnQueryTextListener(this);
+
+        customAdapter = new CustomAdapter(getApplicationContext(), currencies);
+        myListView.setAdapter(customAdapter);
+
+        startProgress();
+
+
 
     }
 
     public void onClick(View aview)
     {
-        startProgress();
+
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        Object clickedObject = parent.getItemAtPosition(position);
+
+        if (clickedObject != null) {
+            rawDataDisplay.setText(currencies.get(position).toString());
+        } else {
+            //null handler
+            Log.e("MainActivity", "Clicked object at position " + position + " is null.");
+        }
+    }
+
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+        // Not used, but required to implement
+        return false;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String newText) {
+        // This is called every time the user types a character
+        if (customAdapter != null) {
+            customAdapter.getFilter().filter(newText);
+        }
+        return true;
     }
 
     public void startProgress()
@@ -144,6 +185,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
                             String temp = xpp.nextText();
                             //if  "description" tag is inside an item, or not
                             if(insideAnItem){ //the parser is currently inside an item block
+                                temp = temp.substring(temp.indexOf("/")+1);
                                 thisCurrency.setName(temp);
                                 Log.d("MyTag","Item name : " + temp);
                             }
@@ -153,8 +195,16 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
                         {
                             // Now just get the associated text
                             String temp = xpp.nextText();
+                            double thisRate = 0.0;
                             if(insideAnItem){ //the parser is currently inside a Thing block
                                 thisCurrency.setDescription(temp);
+
+                                int beginIndex = temp.indexOf("= ") + 2;
+                                int endIndex = temp.indexOf(" ", beginIndex);
+
+                                thisRate = Double.parseDouble(temp.substring(beginIndex, endIndex));
+                                thisCurrency.setRate(thisRate);
+
                                 Log.d("MyTag","Description is " + temp);
                             }
                         }
@@ -196,22 +246,23 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
             }
 
 
-            // Now update the TextView to display raw XML data
-            // Probably not the best way to update TextView
-            // but we are just getting started !
-
             MainActivity.this.runOnUiThread(new Runnable()
             {
                 public void run() {
                     Log.d("UI thread", "I am the UI thread");
 
-                    String newRes = "";
 
-                    for(Currency c : currencies){
-                        newRes = newRes + c.toString() + "\n";
+                    if (currencies.isEmpty()) {
+                        rawDataDisplay.setText("Error: Failed to parse data.");
+                        return;
                     }
 
-                    rawDataDisplay.setText(newRes);
+                    if (customAdapter != null){
+                        customAdapter.updateData(currencies);
+                    }
+
+
+
                 }
             });
         }
