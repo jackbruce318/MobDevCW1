@@ -1,10 +1,5 @@
 package org.me.gcu.bruce_jack_s2432194;
 
-/*  Starter project for Mobile Platform Development - 1st diet 25/26
-    You should use this project as the starting point for your assignment.
-    This project simply reads the data from the required URL and displays the
-    raw data in a TextField
-*/
 
 //
 // Name                 Jack Bruce
@@ -34,10 +29,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Date;
+import android.widget.SearchView;
 
 import org.me.gcu.bruce_jack_s2432194.Currency;
 
-public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener {
+public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener {
     private TextView rawDataDisplay;
 
     private String result;
@@ -50,6 +46,10 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     private String[] names;
 
+    private SearchView searchView;
+
+    private CustomAdapter customAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,8 +61,10 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         myListView = (ListView) findViewById(R.id.countryListView);
         myListView.setOnItemClickListener(this);
 
-        names = new String[0];
-        CustomAdapter customAdapter = new CustomAdapter(getApplicationContext(), names);
+        searchView = (SearchView) findViewById(R.id.searchView);
+        searchView.setOnQueryTextListener(this);
+
+        customAdapter = new CustomAdapter(getApplicationContext(), currencies);
         myListView.setAdapter(customAdapter);
 
         startProgress();
@@ -81,14 +83,26 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         Object clickedObject = parent.getItemAtPosition(position);
 
         if (clickedObject != null) {
-            // LINE 82: Now this line is safe
-            String someValue = clickedObject.toString();
-
             rawDataDisplay.setText(currencies.get(position).toString());
         } else {
-            // Handle the case where the object is null, e.g., show an error message
+            //null handler
             Log.e("MainActivity", "Clicked object at position " + position + " is null.");
         }
+    }
+
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+        // Not used, but required to implement
+        return false;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String newText) {
+        // This is called every time the user types a character
+        if (customAdapter != null) {
+            customAdapter.getFilter().filter(newText);
+        }
+        return true;
     }
 
     public void startProgress()
@@ -232,33 +246,22 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             }
 
 
-            // Now update the TextView to display raw XML data
-            // Probably not the best way to update TextView
-            // but we are just getting started !
-
             MainActivity.this.runOnUiThread(new Runnable()
             {
                 public void run() {
                     Log.d("UI thread", "I am the UI thread");
 
-                    String newRes = "";
 
                     if (currencies.isEmpty()) {
                         rawDataDisplay.setText("Error: Failed to parse data.");
                         return;
                     }
 
-                    names = new String[currencies.size()];
-                    for (int i = 0; i < currencies.size(); i++) {
-                        names[i] = currencies.get(i).getName();
+                    if (customAdapter != null){
+                        customAdapter.updateData(currencies);
                     }
 
-                    CustomAdapter customAdapter = new CustomAdapter(getApplicationContext(), names);
-                    Log.d("Log",names[1]);
 
-                    myListView.setAdapter(customAdapter);
-
-                    rawDataDisplay.setText("Select a currency");
 
                 }
             });

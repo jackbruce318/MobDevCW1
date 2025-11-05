@@ -9,9 +9,15 @@
             android:id="@+id/acknowledgement"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Contains Fx Currency Exchange data"
+            android:text="Select a Currency"
             android:textSize="20sp" />
 
+        <SearchView
+            android:id="@+id/searchView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:iconifiedByDefault="false"
+            android:queryHint="Search..." />
 
         <ListView
             android:id="@+id/countryListView"
@@ -26,7 +32,7 @@
             android:id="@+id/rawDataDisplay"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Please select a currency"
+            android:text=" "
             android:paddingTop="25dp"
             android:textSize="20sp" />
 
