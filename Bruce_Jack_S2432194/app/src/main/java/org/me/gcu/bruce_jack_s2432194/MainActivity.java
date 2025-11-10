@@ -7,10 +7,13 @@ package org.me.gcu.bruce_jack_s2432194;
 //
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
@@ -26,6 +29,7 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import android.widget.SearchView;
@@ -33,8 +37,13 @@ import android.widget.ViewSwitcher;
 
 import org.me.gcu.bruce_jack_s2432194.Currency;
 
-public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener {
+public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener, TextWatcher {
     private TextView rawDataDisplay;
+
+    private TextView convLeftTv;
+    private TextView convRightTv;
+    private TextView convResultTv;
+    private EditText convEditText;
     private ViewSwitcher switcher;
 
     private String result;
@@ -53,6 +62,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     private Button switchButton;
 
+    private Currency currentCurrency;
+
 
 
     @Override
@@ -60,6 +71,15 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         rawDataDisplay = (TextView)findViewById(R.id.rawDataDisplay);
+        
+        //Conversion page widgets
+        convLeftTv = (TextView)findViewById(R.id.convLeftTextView);
+        convRightTv = (TextView)findViewById(R.id.convRightTextView);
+        convResultTv = (TextView)findViewById(R.id.convResultTextView);
+        convEditText = (EditText)findViewById(R.id.convEditText);
+
+        convEditText.addTextChangedListener(this);
+
 
         currencies = new ArrayList<Currency>();
 
@@ -78,6 +98,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         customAdapter = new CustomAdapter(getApplicationContext(), currencies);
         myListView.setAdapter(customAdapter);
 
+
+
         startProgress();
 
 
@@ -95,9 +117,15 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Object clickedObject = parent.getItemAtPosition(position);
+        currentCurrency = (Currency) clickedObject;
 
-        if (clickedObject != null) {
+        if (currentCurrency != null) {
             rawDataDisplay.setText(currencies.get(position).toString());
+            convRightTv.setText(currentCurrency.getName());
+            convResultTv.setText(String.valueOf(currentCurrency.getRate()));
+            convEditText.setText("1");
+
+
         } else {
             //null handler
             Log.e("MainActivity", "Clicked object at position " + position + " is null.");
@@ -117,6 +145,32 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             customAdapter.getFilter().filter(newText);
         }
         return true;
+    }
+
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        // Not used
+    }
+
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+        // Not used
+    }
+
+    @Override
+    public void afterTextChanged(Editable s) {
+        if (currentCurrency != null && s.length() > 0) {
+            try {
+                double input = Double.parseDouble(s.toString());
+                double result = input * currentCurrency.getRate();
+                DecimalFormat df = new DecimalFormat("#.##");
+                convResultTv.setText(df.format(result));
+            } catch (NumberFormatException e) {
+                convResultTv.setText("Invalid Input");
+            }
+        } else if (s.length() == 0) {
+            convResultTv.setText("");
+        }
     }
 
     public void startProgress()
