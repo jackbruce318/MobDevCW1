@@ -51,7 +51,7 @@ public class Currency {
     @Override
 
     public String toString() {
-        return name + " " + description + " " + pubDate;
+        return "1" + name + " is equal to " + rate + " Great British Pounds on " + " " + pubDate;
     }
 
 }

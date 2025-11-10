@@ -1,42 +1,74 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ViewSwitcher xmlns:android="http://schemas.android.com/apk/res/android"
+
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:paddingTop="25dp">
+    android:id="@+id/vwSwitch"
+    >
+
+
+    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:paddingTop="25dp">
+        <LinearLayout
+            android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent">
+
+            <TextView
+                android:id="@+id/acknowledgement"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="Select a Currency"
+                android:textSize="20sp" />
+
+            <SearchView
+                android:id="@+id/searchView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:iconifiedByDefault="false"
+                android:queryHint="Search..." />
+
+            <ListView
+                android:id="@+id/countryListView"
+                android:layout_width="fill_parent"
+                android:layout_height="290dp"
+                android:divider="@color/material_blue_grey_800"
+                android:dividerHeight="1dp"
+                android:footerDividersEnabled="false" >
+            </ListView>
+
+            <TextView
+                android:id="@+id/rawDataDisplay"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text=" "
+                android:paddingTop="25dp"
+                android:textSize="20sp" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/btnSwitch"
+                android:text="Convert Currency"
+                android:textSize="20sp"
+                />
+
+
+        </LinearLayout>
+
+    </ScrollView>
+
     <LinearLayout
-        android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent">
-
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        >
         <TextView
-            android:id="@+id/acknowledgement"
-            android:layout_width="fill_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Select a Currency"
-            android:textSize="20sp" />
+            android:text="Hello World"/>
 
-        <SearchView
-            android:id="@+id/searchView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:iconifiedByDefault="false"
-            android:queryHint="Search..." />
 
-        <ListView
-            android:id="@+id/countryListView"
-            android:layout_width="fill_parent"
-            android:layout_height="290dp"
-            android:divider="@color/material_blue_grey_800"
-            android:dividerHeight="1dp"
-            android:footerDividersEnabled="false" >
-        </ListView>
-
-        <TextView
-            android:id="@+id/rawDataDisplay"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text=" "
-            android:paddingTop="25dp"
-            android:textSize="20sp" />
 
 
     </LinearLayout>
 
-</ScrollView>
+</ViewSwitcher>

@@ -1,6 +1,5 @@
 package org.me.gcu.bruce_jack_s2432194;
 
-
 //
 // Name                 Jack Bruce
 // Student ID           S2432194
@@ -30,11 +29,13 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Date;
 import android.widget.SearchView;
+import android.widget.ViewSwitcher;
 
 import org.me.gcu.bruce_jack_s2432194.Currency;
 
 public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener {
     private TextView rawDataDisplay;
+    private ViewSwitcher switcher;
 
     private String result;
     private String url1="";
@@ -50,6 +51,10 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     private CustomAdapter customAdapter;
 
+    private Button switchButton;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,6 +69,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         searchView = (SearchView) findViewById(R.id.searchView);
         searchView.setOnQueryTextListener(this);
 
+        switcher = (ViewSwitcher) findViewById(R.id.vwSwitch);
+
+        switchButton = (Button) findViewById(R.id.btnSwitch);
+        switchButton.setOnClickListener(this);
+
+
         customAdapter = new CustomAdapter(getApplicationContext(), currencies);
         myListView.setAdapter(customAdapter);
 
@@ -75,6 +86,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     public void onClick(View aview)
     {
+        if (aview.getId() == R.id.btnSwitch){
+            switcher.showNext();
+        }
 
     }
 
