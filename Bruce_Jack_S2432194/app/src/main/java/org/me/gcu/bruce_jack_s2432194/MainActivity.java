@@ -40,13 +40,18 @@ import org.me.gcu.bruce_jack_s2432194.Currency;
 public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener, TextWatcher {
     private TextView rawDataDisplay;
 
+    //conversion page widgets
     private TextView convLeftTv;
     private TextView convRightTv;
     private TextView convResultTv;
     private EditText convEditText;
+    private Button btnGoBack;
+    private Button btnSwap;
+    private String result;
+
     private ViewSwitcher switcher;
 
-    private String result;
+
     private String url1="";
     private String urlSource="https://www.fx-exchange.com/gbp/rss.xml";
 
@@ -77,6 +82,11 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         convRightTv = (TextView)findViewById(R.id.convRightTextView);
         convResultTv = (TextView)findViewById(R.id.convResultTextView);
         convEditText = (EditText)findViewById(R.id.convEditText);
+        btnGoBack = (Button)findViewById(R.id.btnGoBack);
+        btnGoBack.setOnClickListener(this);
+        btnSwap = (Button)findViewById(R.id.btnSwap);
+        btnSwap.setOnClickListener(this);
+
 
         convEditText.addTextChangedListener(this);
 
@@ -108,9 +118,24 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     public void onClick(View aview)
     {
-        if (aview.getId() == R.id.btnSwitch){
+        if (aview.getId() == R.id.btnSwitch || aview.getId() == R.id.btnGoBack){
             switcher.showNext();
         }
+        else if (aview.getId() == R.id.btnSwap){
+            String temp1 = convLeftTv.getText().toString();
+            String temp2 = convRightTv.getText().toString();
+            convLeftTv.setText(temp2);
+            convRightTv.setText(temp1);
+
+            temp1 = convEditText.getText().toString();
+            temp2 = convResultTv.getText().toString();
+            convEditText.setText(temp2);
+            convResultTv.setText(temp1);
+
+
+        }
+
+
 
     }
 
@@ -121,9 +146,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
         if (currentCurrency != null) {
             rawDataDisplay.setText(currencies.get(position).toString());
-            convRightTv.setText(currentCurrency.getName());
+            convLeftTv.setText("GBP");
+            convRightTv.setText(currentCurrency.getCode());
             convResultTv.setText(String.valueOf(currentCurrency.getRate()));
             convEditText.setText("1");
+
+
 
 
         } else {
@@ -162,8 +190,18 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         if (currentCurrency != null && s.length() > 0) {
             try {
                 double input = Double.parseDouble(s.toString());
-                double result = input * currentCurrency.getRate();
+                double result;
                 DecimalFormat df = new DecimalFormat("#.##");
+
+                //this is here because the only way the number in the rate textview would be 1
+                //is if the user is converting INTO GBP
+                if(convRightTv.getText().toString().equals("GBP")){
+                    result = input / currentCurrency.getRate();
+                }
+                else{
+                    result = input * currentCurrency.getRate();
+                }
+
                 convResultTv.setText(df.format(result));
             } catch (NumberFormatException e) {
                 convResultTv.setText("Invalid Input");
@@ -255,6 +293,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                             if(insideAnItem){ //the parser is currently inside an item block
                                 temp = temp.substring(temp.indexOf("/")+1);
                                 thisCurrency.setName(temp);
+                                thisCurrency.setCode(temp.substring(temp.indexOf("(")+1,temp.indexOf(")")));
                                 Log.d("MyTag","Item name : " + temp);
                             }
 

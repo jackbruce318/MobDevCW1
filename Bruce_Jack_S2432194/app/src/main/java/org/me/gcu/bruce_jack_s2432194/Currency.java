@@ -8,7 +8,7 @@ public class Currency {
     private String name;
     private String description;
     private String pubDate;
-
+    private String code;
     private double rate;
 
 
@@ -26,6 +26,11 @@ public class Currency {
     public String getPubDate(){
         return pubDate;
     }
+
+    public String getCode(){
+        return code;
+    }
+
 
     public double getRate(){
         return rate;
@@ -48,10 +53,15 @@ public class Currency {
         this.rate = rate;
     }
 
+    public void setCode(String code){
+        this.code = code;
+    }
+
+
     @Override
 
     public String toString() {
-        return "1" + name + " is equal to " + rate + " Great British Pounds on " + " " + pubDate;
+        return "1 GBP is equal to " + rate + " " + code + " on " + pubDate;
     }
 
 }
