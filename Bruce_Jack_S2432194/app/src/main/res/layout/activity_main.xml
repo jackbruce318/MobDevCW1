@@ -42,7 +42,8 @@
                 android:layout_height="wrap_content"
                 android:text=""
                 android:paddingTop="25dp"
-                android:textSize="20sp" />
+                android:textSize="20sp"
+                android:background="@color/black"/>
 
             <Button
                 android:layout_width="wrap_content"

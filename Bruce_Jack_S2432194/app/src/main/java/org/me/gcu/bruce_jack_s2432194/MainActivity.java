@@ -18,6 +18,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -153,8 +154,25 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         df.format(currentCurrency.getRate());
 
         if (currentCurrency != null) {
+            //use toString() to display basic currency information
             rawDataDisplay.setText(currentCurrency.toString());
-            //rawDataDisplay.setTextColor();
+            double rate = currentCurrency.getRate();
+
+            //I don't think this is very efficient but every other idea I had involved passing the colour
+            //as a String and building the R.color.thiscolor parameter, and it turns out that doesn't work at all.
+            if(rate < 0.5){
+                rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.red));
+            }
+            else if(rate >= 0.5 && rate < 1){
+                rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.orange));
+            }
+            else if(rate >= 1 && rate < 1.5){
+                rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.yellow));
+            }
+            else{
+                rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.green));
+            }
+
 
             convLeftTv.setText("GBP");
             convRightTv.setText(currentCurrency.getCode());
@@ -169,6 +187,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             Log.e("MainActivity", "Clicked object at position " + position + " is null.");
         }
     }
+
+
 
     @Override
     public boolean onQueryTextSubmit(String query) {
@@ -317,7 +337,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
                                 thisRate = Double.parseDouble(temp.substring(beginIndex, endIndex));
                                 thisCurrency.setRate(thisRate);
-                                thisCurrency.setStrengthColour(thisRate);
 
                                 Log.d("MyTag","Description is " + temp);
                             }
