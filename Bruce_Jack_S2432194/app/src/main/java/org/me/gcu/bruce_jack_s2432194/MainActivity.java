@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.view.View.OnClickListener;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import android.os.Handler;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -32,7 +33,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import android.widget.SearchView;
 import android.widget.ViewSwitcher;
 
@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private Currency currentCurrency;
 
     private DecimalFormat df;
+    private Handler mHandler;
 
 
 
@@ -111,10 +112,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         myListView.setAdapter(customAdapter);
 
 
-
         startProgress();
-
-
 
     }
 
@@ -241,12 +239,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     public void startProgress()
     {
+        mHandler = new Handler();
         // Run network access on a separate thread;
         new Thread(new Task(urlSource)).start();
     } //
 
-    // Need separate thread to access the internet resource over network
-    // Other neater solutions should be adopted in later iterations.
+
     private class Task implements Runnable
     {
         private String url;
@@ -378,10 +376,10 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 //throw new RuntimeException(e);
             }
 
-            //change this to post method from lecture slides
-            MainActivity.this.runOnUiThread(new Runnable()
-            {
-                public void run() {
+
+            mHandler.post(new Runnable(){
+                @Override
+                public void run(){
                     Log.d("UI thread", "I am the UI thread");
 
 
@@ -393,9 +391,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                     if (customAdapter != null){
                         customAdapter.updateData(currencies);
                     }
-
-
-
                 }
             });
         }
