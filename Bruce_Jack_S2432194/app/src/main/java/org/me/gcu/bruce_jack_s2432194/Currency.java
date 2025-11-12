@@ -10,6 +10,7 @@ public class Currency {
     private String pubDate;
     private String code;
     private double rate;
+    private int strengthColour;
 
 
     public Currency(){
@@ -36,6 +37,10 @@ public class Currency {
         return rate;
     }
 
+    public int getStrengthColour(){
+        return strengthColour;
+    }
+
 
     public void setName(String name){
         this.name = name;
@@ -55,6 +60,23 @@ public class Currency {
 
     public void setCode(String code){
         this.code = code;
+    }
+
+    public void setStrengthColour(double rate){
+        rate = this.rate;
+
+        if(rate < 0.5){
+            strengthColour = 4276544;
+        }
+        else if(rate >= 0.5 && rate < 1){
+            //strengthColour = "orange";
+        }
+        else if(rate >= 1 && rate < 1.5){
+            //strengthColour = "yellow";
+        }
+        else{
+            //strengthColour = "green";
+        }
     }
 
 

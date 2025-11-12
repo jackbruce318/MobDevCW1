@@ -51,16 +51,14 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     private ViewSwitcher switcher;
 
-
+    //rss feed Strings
     private String url1="";
     private String urlSource="https://www.fx-exchange.com/gbp/rss.xml";
 
+    //main page variables and widgets
     private ArrayList<Currency> currencies;
 
     private ListView myListView;
-
-    private String[] names;
-
     private SearchView searchView;
 
     private CustomAdapter customAdapter;
@@ -69,6 +67,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     private Currency currentCurrency;
 
+    private DecimalFormat df;
+
+
 
 
     @Override
@@ -76,6 +77,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         rawDataDisplay = (TextView)findViewById(R.id.rawDataDisplay);
+
+        df = new DecimalFormat("#.##");
         
         //Conversion page widgets
         convLeftTv = (TextView)findViewById(R.id.convLeftTextView);
@@ -86,11 +89,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         btnGoBack.setOnClickListener(this);
         btnSwap = (Button)findViewById(R.id.btnSwap);
         btnSwap.setOnClickListener(this);
-
-
         convEditText.addTextChangedListener(this);
 
-
+        //list page widgets and variables
         currencies = new ArrayList<Currency>();
 
         myListView = (ListView) findViewById(R.id.countryListView);
@@ -118,15 +119,21 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     public void onClick(View aview)
     {
+        //if the button pressed is either button meant for switching ViewSwitcher
         if (aview.getId() == R.id.btnSwitch || aview.getId() == R.id.btnGoBack){
+            //only two views so we can just make use of the circular nature of the ViewSwitcher
             switcher.showNext();
         }
+        //if user presses button to swap currencies on conversion page
         else if (aview.getId() == R.id.btnSwap){
+
+            //swap the widget text contents around
             String temp1 = convLeftTv.getText().toString();
             String temp2 = convRightTv.getText().toString();
             convLeftTv.setText(temp2);
             convRightTv.setText(temp1);
 
+            //preserve the current conversion values
             temp1 = convEditText.getText().toString();
             temp2 = convResultTv.getText().toString();
             convEditText.setText(temp2);
@@ -143,9 +150,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Object clickedObject = parent.getItemAtPosition(position);
         currentCurrency = (Currency) clickedObject;
+        df.format(currentCurrency.getRate());
 
         if (currentCurrency != null) {
-            rawDataDisplay.setText(currencies.get(position).toString());
+            rawDataDisplay.setText(currentCurrency.toString());
+            //rawDataDisplay.setTextColor();
+
             convLeftTv.setText("GBP");
             convRightTv.setText(currentCurrency.getCode());
             convResultTv.setText(String.valueOf(currentCurrency.getRate()));
@@ -191,10 +201,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             try {
                 double input = Double.parseDouble(s.toString());
                 double result;
-                DecimalFormat df = new DecimalFormat("#.##");
 
-                //this is here because the only way the number in the rate textview would be 1
-                //is if the user is converting INTO GBP
+                //if we are converting INTO GBP
                 if(convRightTv.getText().toString().equals("GBP")){
                     result = input / currentCurrency.getRate();
                 }
@@ -267,8 +275,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 XmlPullParser xpp = factory.newPullParser();
                 xpp.setInput( new StringReader( result ) );
 
-                //YOUR PARSING HERE!!!
-
                 int eventType = xpp.getEventType();
                 boolean insideAnItem = false; //flag indicating when the parser is traversing a new item
 
@@ -303,7 +309,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                             // Now just get the associated text
                             String temp = xpp.nextText();
                             double thisRate = 0.0;
-                            if(insideAnItem){ //the parser is currently inside a Thing block
+                            if(insideAnItem){ //the parser is currently inside an item block
                                 thisCurrency.setDescription(temp);
 
                                 int beginIndex = temp.indexOf("= ") + 2;
@@ -311,6 +317,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
                                 thisRate = Double.parseDouble(temp.substring(beginIndex, endIndex));
                                 thisCurrency.setRate(thisRate);
+                                thisCurrency.setStrengthColour(thisRate);
 
                                 Log.d("MyTag","Description is " + temp);
                             }
@@ -319,7 +326,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                         {
                             // Now just get the associated text
                             String temp = xpp.nextText();
-                            if(insideAnItem){ //the parser is currently inside a Thing block
+                            if(insideAnItem){ //the parser is currently inside an item block
                                 thisCurrency.setPubDate(temp);
                                 Log.d("MyTag","Publish date is " + temp);
                             }
@@ -352,7 +359,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 //throw new RuntimeException(e);
             }
 
-
+            //change this to post method from lecture slides
             MainActivity.this.runOnUiThread(new Runnable()
             {
                 public void run() {
