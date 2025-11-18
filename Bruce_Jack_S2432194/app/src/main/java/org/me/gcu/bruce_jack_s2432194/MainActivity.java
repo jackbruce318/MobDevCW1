@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.view.View.OnClickListener;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.ViewModelProvider;
 import android.os.Handler;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -36,8 +37,6 @@ import java.util.ArrayList;
 import android.widget.SearchView;
 import android.widget.ViewSwitcher;
 
-import org.me.gcu.bruce_jack_s2432194.Currency;
-
 public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener, TextWatcher {
     private TextView rawDataDisplay;
 
@@ -53,11 +52,10 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private ViewSwitcher switcher;
 
     //rss feed Strings
-    private String url1="";
     private String urlSource="https://www.fx-exchange.com/gbp/rss.xml";
 
     //main page variables and widgets
-    private ArrayList<Currency> currencies;
+    private CurrencyViewModel currencyViewModel;
 
     private ListView myListView;
     private SearchView searchView;
@@ -71,17 +69,17 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private DecimalFormat df;
     private Handler mHandler;
 
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        currencyViewModel = new ViewModelProvider(this).get(CurrencyViewModel.class);
+
         rawDataDisplay = (TextView)findViewById(R.id.rawDataDisplay);
 
         df = new DecimalFormat("#.##");
-        
+
         //Conversion page widgets
         convLeftTv = (TextView)findViewById(R.id.convLeftTextView);
         convRightTv = (TextView)findViewById(R.id.convRightTextView);
@@ -94,8 +92,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         convEditText.addTextChangedListener(this);
 
         //list page widgets and variables
-        currencies = new ArrayList<Currency>();
-
         myListView = (ListView) findViewById(R.id.countryListView);
         myListView.setOnItemClickListener(this);
 
@@ -107,13 +103,16 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         switchButton = (Button) findViewById(R.id.btnSwitch);
         switchButton.setOnClickListener(this);
 
-
-        customAdapter = new CustomAdapter(getApplicationContext(), currencies);
+        customAdapter = new CustomAdapter(getApplicationContext(), currencyViewModel.getCurrencyList());
         myListView.setAdapter(customAdapter);
 
+        if (customAdapter!= null){
+            customAdapter.updateData(currencyViewModel.getCurrencyList());
+        }
 
-        startProgress();
-
+        if (currencyViewModel.getCurrencyList().isEmpty()) {
+            startProgress();
+        }
     }
 
     public void onClick(View aview)
@@ -137,12 +136,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             temp2 = convResultTv.getText().toString();
             convEditText.setText(temp2);
             convResultTv.setText(temp1);
-
-
         }
-
-
-
     }
 
     @Override
@@ -156,8 +150,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             rawDataDisplay.setText(currentCurrency.toString());
             double rate = currentCurrency.getRate();
 
-            //I don't think this is very efficient but every other idea I had involved passing the colour
-            //as a String and building the R.color.thiscolor parameter, and it turns out that doesn't work at all.
             if(rate < 0.5){
                 rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.red));
             }
@@ -171,22 +163,15 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.green));
             }
 
-
             convLeftTv.setText("GBP");
             convRightTv.setText(currentCurrency.getCode());
             convResultTv.setText(String.valueOf(currentCurrency.getRate()));
             convEditText.setText("1");
-
-
-
-
         } else {
             //null handler
             Log.e("MainActivity", "Clicked object at position " + position + " is null.");
         }
     }
-
-
 
     @Override
     public boolean onQueryTextSubmit(String query) {
@@ -196,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        // This is called every time the user types a character
+        //This is called every time the user types a character
         if (customAdapter != null) {
             customAdapter.getFilter().filter(newText);
         }
@@ -244,7 +229,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         new Thread(new Task(urlSource)).start();
     } //
 
-
     private class Task implements Runnable
     {
         private String url;
@@ -257,7 +241,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             URLConnection yc;
             BufferedReader in = null;
             String inputLine = "";
-
+            ArrayList<Currency> currencies = new ArrayList<>();
 
             Log.d("MyTask","in run");
 
@@ -296,10 +280,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 int eventType = xpp.getEventType();
                 boolean insideAnItem = false; //flag indicating when the parser is traversing a new item
 
-
                 while (eventType != XmlPullParser.END_DOCUMENT)
                 {
-
                     if(eventType == XmlPullParser.START_TAG) // Found a start tag
                     {   // Check which start Tag we have as we'd do different things
                         if (xpp.getName().equalsIgnoreCase("item"))
@@ -320,7 +302,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                                 thisCurrency.setCode(temp.substring(temp.indexOf("(")+1,temp.indexOf(")")));
                                 Log.d("MyTag","Item name : " + temp);
                             }
-
                         }
                         else if (xpp.getName().equalsIgnoreCase("description"))
                         {
@@ -348,7 +329,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                                 Log.d("MyTag","Publish date is " + temp);
                             }
                         }
-
                     }
                     else if(eventType == XmlPullParser.END_TAG) // Found an end tag
                     {
@@ -359,45 +339,26 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                             Log.d("MyTag","Item parsing completed!");
                         }
                     }
-
-
-
-
                     eventType = xpp.next(); // Get the next event  before looping again
                 } // End of while
-
-
-
             } catch (XmlPullParserException e) {
                 Log.e("Parsing","EXCEPTION" + e);
-                //throw new RuntimeException(e);
             } catch (IOException e) {
                 Log.e("Parsing","I/O EXCEPTION" + e);
-                //throw new RuntimeException(e);
             }
-
 
             mHandler.post(new Runnable(){
                 @Override
                 public void run(){
                     Log.d("UI thread", "I am the UI thread");
 
-
                     if (currencies.isEmpty()) {
                         rawDataDisplay.setText("Error: Failed to parse data.");
                         return;
                     }
-
-                    if (customAdapter != null){
-                        customAdapter.updateData(currencies);
-                    }
+                    currencyViewModel.setCurrencies(currencies);
                 }
             });
         }
-
     }
-
-
-
-
 }
