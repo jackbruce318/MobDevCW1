@@ -1,5 +1,7 @@
 package org.me.gcu.bruce_jack_s2432194;
 
+import androidx.core.content.ContextCompat;
+
 import java.util.Date;
 
 //based on rss feed it must have: title, publishing date, description (shows us the rate)
@@ -10,7 +12,9 @@ public class Currency {
     private String pubDate;
     private String code;
     private double rate;
-
+    private String colour;
+    private double latitude;
+    private double longitude;
 
 
     public Currency(){
@@ -37,6 +41,17 @@ public class Currency {
         return rate;
     }
 
+    public String getColour(){
+        return colour;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
 
     public void setName(String name){
         this.name = name;
@@ -58,8 +73,41 @@ public class Currency {
         this.code = code;
     }
 
+    public void setColour(double rate){
+        if(rate < 0.5){
+            this.colour = "red";
+        }
+        else if(rate >= 0.5 && rate < 1){
+            this.colour = "orange";
+        }
+        else if(rate >= 1 && rate < 1.5){
+            this.colour = "yellow";
+        }
+        else{
+            this.colour = "green";
+        }
+    }
 
-
+    public void setLatLon(String code) {
+        switch (code) {
+            case "USD":
+                this.latitude = 40.7128;
+                this.longitude = -74.0060;
+                break;
+            case "EUR":
+                this.latitude = 48.8566;
+                this.longitude = 2.3522;
+                break;
+            case "JPY":
+                this.latitude = 35.6895;
+                this.longitude = 139.6917;
+                break;
+            default:
+                this.latitude = 0;
+                this.longitude = 0;
+                break;
+        }
+    }
 
     @Override
 

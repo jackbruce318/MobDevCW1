@@ -106,9 +106,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         customAdapter = new CustomAdapter(getApplicationContext(), currencyViewModel.getCurrencyList());
         myListView.setAdapter(customAdapter);
 
-        if (customAdapter!= null){
-            customAdapter.updateData(currencyViewModel.getCurrencyList());
-        }
+        currencyViewModel.getCurrencies().observe(this, currencies -> {
+            customAdapter.updateData(currencies);
+        });
 
         if (currencyViewModel.getCurrencyList().isEmpty()) {
             startProgress();
@@ -143,25 +143,17 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Object clickedObject = parent.getItemAtPosition(position);
         currentCurrency = (Currency) clickedObject;
+        currencyViewModel.selectCurrency(currentCurrency);
         df.format(currentCurrency.getRate());
 
         if (currentCurrency != null) {
             //use toString() to display basic currency information
             rawDataDisplay.setText(currentCurrency.toString());
             double rate = currentCurrency.getRate();
+            //color logic here copied from flag logic
 
-            if(rate < 0.5){
-                rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.red));
-            }
-            else if(rate >= 0.5 && rate < 1){
-                rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.orange));
-            }
-            else if(rate >= 1 && rate < 1.5){
-                rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.yellow));
-            }
-            else{
-                rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.green));
-            }
+            rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.green));
+
 
             convLeftTv.setText("GBP");
             convRightTv.setText(currentCurrency.getCode());
@@ -181,7 +173,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        //This is called every time the user types a character
+        // This is called every time the user types a character
         if (customAdapter != null) {
             customAdapter.getFilter().filter(newText);
         }
@@ -300,6 +292,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                                 temp = temp.substring(temp.indexOf("/")+1);
                                 thisCurrency.setName(temp);
                                 thisCurrency.setCode(temp.substring(temp.indexOf("(")+1,temp.indexOf(")")));
+                                thisCurrency.setLatLon(thisCurrency.getCode());
                                 Log.d("MyTag","Item name : " + temp);
                             }
                         }
@@ -316,6 +309,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
                                 thisRate = Double.parseDouble(temp.substring(beginIndex, endIndex));
                                 thisCurrency.setRate(thisRate);
+                                thisCurrency.setColour(thisRate);
 
                                 Log.d("MyTag","Description is " + temp);
                             }
@@ -344,7 +338,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             } catch (XmlPullParserException e) {
                 Log.e("Parsing","EXCEPTION" + e);
             } catch (IOException e) {
-                Log.e("Parsing","I/O EXCEPTION" + e);
+                Log.e("Parsing","I/O EXCEPTION");
             }
 
             mHandler.post(new Runnable(){
