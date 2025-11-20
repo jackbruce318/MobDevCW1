@@ -13,6 +13,7 @@ public class Currency {
     private String colour;
     private double latitude;
     private double longitude;
+    private boolean isMain;
 
 
     public Currency(){
@@ -50,6 +51,8 @@ public class Currency {
     public double getLongitude() {
         return longitude;
     }
+
+    public boolean getIsMain(){return isMain;}
 
     public void setName(String name){
         this.name = name;
@@ -93,6 +96,9 @@ public class Currency {
     public void setLongitude(double longitude) {
         this.longitude = longitude;
     }
+
+    public void setIsMain(boolean isMain){this.isMain = isMain;}
+
 
 
 

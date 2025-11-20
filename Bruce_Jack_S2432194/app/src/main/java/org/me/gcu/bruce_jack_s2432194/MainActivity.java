@@ -23,7 +23,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
@@ -43,6 +42,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import android.widget.SearchView;
 import android.widget.ViewSwitcher;
 
@@ -82,6 +84,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     private DecimalFormat df;
     private Handler mHandler;
+    private ArrayList<Currency> mainList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,6 +131,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
         customAdapter = new CustomAdapter(getApplicationContext(), currencyViewModel.getCurrencyList());
         myListView.setAdapter(customAdapter);
+
+        mainList = new ArrayList<Currency>();
 
         //observe for changes in the list of currencies
         currencyViewModel.getCurrencies().observe(this, currencies -> {
@@ -353,6 +358,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 int eventType = xpp.getEventType();
                 boolean insideAnItem = false; //flag indicating when the parser is traversing a new item
 
+                String[] mainCurrencyCodes = getResources().getStringArray(R.array.main_currencies);
+                List<String> mainCurrenciesList = Arrays.asList(mainCurrencyCodes);
+
                 while (eventType != XmlPullParser.END_DOCUMENT)
                 {
                     if(eventType == XmlPullParser.START_TAG) // Found a start tag
@@ -409,8 +417,15 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                     {
                         if (xpp.getName().equalsIgnoreCase("item"))
                         {
-                            //ensure object has been read correctly and then finally set the coordinates
+                            //ensure object has been read correctly
                             if (thisCurrency != null) {
+                                //if this currency's code is in the list of main currencies
+                                if (mainCurrenciesList.contains(thisCurrency.getCode().toLowerCase())) {
+                                    thisCurrency.setIsMain(true); //set main to true
+                                    mainList.add(thisCurrency); //add to main list
+                                }
+
+                                //and then finally set the coordinates
                                 setCoordinates(thisCurrency);
                             }
                             currencies.add(thisCurrency); //add to collection
@@ -440,6 +455,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                     }
                     //update the LiveData in the ViewModel therefore triggering the observers and updating the adapter
                     currencyViewModel.setCurrencies(currencies);
+                    currencyViewModel.setMainList(mainList);
                 }
             });
         }
