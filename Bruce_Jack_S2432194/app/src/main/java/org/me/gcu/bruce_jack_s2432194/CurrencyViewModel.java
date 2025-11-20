@@ -6,6 +6,9 @@ import androidx.lifecycle.ViewModel;
 import java.util.ArrayList;
 
 public class CurrencyViewModel extends ViewModel {
+    //This ViewModel uses LiveData so that any changes to either the List in ListView or the currently selected currency can be observed
+    //and handled in MainActivity.
+
     private final MutableLiveData<ArrayList<Currency>> currencies = new MutableLiveData<>();
     private ArrayList<Currency> currencyList = new ArrayList<>();
     private final MutableLiveData<Currency> selectedCurrency = new MutableLiveData<>();

@@ -6,6 +6,9 @@ package org.me.gcu.bruce_jack_s2432194;
 // Programme of Study   Software Development
 //
 
+
+
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -14,11 +17,17 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import android.os.Handler;
 
@@ -49,6 +58,10 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private Button btnSwap;
     private String result;
 
+    //components for the maps display
+    private MapsFragment mapsFragment;
+    private FrameLayout mapFrame;
+
     private ViewSwitcher switcher;
 
     //rss feed Strings
@@ -59,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     private ListView myListView;
     private SearchView searchView;
+    private ImageView flagImageView;
 
     private CustomAdapter customAdapter;
 
@@ -74,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //initialise the ViewModel
         currencyViewModel = new ViewModelProvider(this).get(CurrencyViewModel.class);
 
         rawDataDisplay = (TextView)findViewById(R.id.rawDataDisplay);
@@ -91,12 +106,20 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         btnSwap.setOnClickListener(this);
         convEditText.addTextChangedListener(this);
 
+        mapsFragment = new MapsFragment();
+        FragmentManager manager1 = getSupportFragmentManager();
+        FragmentTransaction transaction1 = manager1.beginTransaction();
+        transaction1.replace(R.id.mapFragment, mapsFragment);
+        transaction1.commit();
+
         //list page widgets and variables
         myListView = (ListView) findViewById(R.id.countryListView);
         myListView.setOnItemClickListener(this);
 
         searchView = (SearchView) findViewById(R.id.searchView);
         searchView.setOnQueryTextListener(this);
+
+        flagImageView = (ImageView) findViewById(R.id.flagImageView);
 
         switcher = (ViewSwitcher) findViewById(R.id.vwSwitch);
 
@@ -106,10 +129,13 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         customAdapter = new CustomAdapter(getApplicationContext(), currencyViewModel.getCurrencyList());
         myListView.setAdapter(customAdapter);
 
+        //observe for changes in the list of currencies
         currencyViewModel.getCurrencies().observe(this, currencies -> {
+            //use lambda expression to pass newly fetched data to the adapter
             customAdapter.updateData(currencies);
         });
 
+        //only fetch data if ViewModel is empty (e.g screen has not been rotated)
         if (currencyViewModel.getCurrencyList().isEmpty()) {
             startProgress();
         }
@@ -124,6 +150,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         }
         //if user presses button to swap currencies on conversion page
         else if (aview.getId() == R.id.btnSwap){
+
+            //maybe look at storing these in viewModel
 
             //swap the widget text contents around
             String temp1 = convLeftTv.getText().toString();
@@ -143,16 +171,33 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Object clickedObject = parent.getItemAtPosition(position);
         currentCurrency = (Currency) clickedObject;
+
+        //set the clicked currency as the current currency in the ViewModel
         currencyViewModel.selectCurrency(currentCurrency);
+
+        //round to two dp
         df.format(currentCurrency.getRate());
 
+
         if (currentCurrency != null) {
+
             //use toString() to display basic currency information
             rawDataDisplay.setText(currentCurrency.toString());
             double rate = currentCurrency.getRate();
-            //color logic here copied from flag logic
 
-            rawDataDisplay.setTextColor(ContextCompat.getColor(this, R.color.green));
+            //get the int identifier for color resources here
+            //data annotation is because Android Studio does NOT like this logic
+            @SuppressLint("DiscouragedApi") int colourId = getResources().getIdentifier(currentCurrency.getColour(), "color", getPackageName());
+            rawDataDisplay.setTextColor(ContextCompat.getColor(this, colourId));
+
+            //Once again get int identifier for images
+            @SuppressLint("DiscouragedApi") int flagId = getResources().getIdentifier(currentCurrency.getCode().toLowerCase(), "drawable", getPackageName());
+            if (flagId != 0) {
+                flagImageView.setImageResource(flagId);
+            } else {
+                Log.w("Error", "Resource Not Found ");
+                flagImageView.setImageResource(0);
+            }
 
 
             convLeftTv.setText("GBP");
@@ -167,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     @Override
     public boolean onQueryTextSubmit(String query) {
-        // Not used, but required to implement
+        //Don't need to use this but it is required to implement the next method
         return false;
     }
 
@@ -182,12 +227,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     @Override
     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-        // Not used
+        //Don't need to use this but it is required to implement the interface
     }
 
     @Override
     public void onTextChanged(CharSequence s, int start, int before, int count) {
-        // Not used
+        //Don't need to use this but it is required to implement the interface
     }
 
     @Override
@@ -205,6 +250,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                     result = input * currentCurrency.getRate();
                 }
 
+                //round to two dp
                 convResultTv.setText(df.format(result));
             } catch (NumberFormatException e) {
                 convResultTv.setText("Invalid Input");
@@ -219,7 +265,42 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         mHandler = new Handler();
         // Run network access on a separate thread;
         new Thread(new Task(urlSource)).start();
-    } //
+    }
+
+    //method to fetch the coordinates from the strings file and set the currency lat and long to these values
+    //Currency class did not like this method being in it so it is now just a helper method
+    //called in the parsing thread
+    public void setCoordinates(Currency thisCurrency){
+        //make code lower because resource names must be lowercase
+        String currencyCode = thisCurrency.getCode().toLowerCase();
+
+        //get int identifier for coordinate item
+        @SuppressLint("DiscouragedApi")
+        int coordStringId = getResources().getIdentifier(currencyCode, "string", getPackageName());
+
+        if (coordStringId != 0) {
+            String coordinates = getString(coordStringId);
+
+            //split into latitude and longitude
+            String[] parts = coordinates.split(",");
+
+            //if parsed correctly it will be two parts
+            if (parts.length == 2) {
+                try {
+                    //parse into doubles and set values
+                    thisCurrency.setLatitude(Double.parseDouble(parts[0].trim()));
+                    thisCurrency.setLongitude(Double.parseDouble(parts[1].trim()));
+
+                } catch (NumberFormatException e) {
+                    Log.e("MainActivity", "Failed to parse coordinates for: " + currencyCode, e);
+                }
+            }
+        } else {
+            Log.w("MainActivity", "Coordinate string not found for currency: " + currencyCode);
+        }
+    }
+
+
 
     private class Task implements Runnable
     {
@@ -260,7 +341,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             i = result.indexOf("</rss>"); //final tag
             result = result.substring(0, i + 6);
 
-            // Now that you have the xml data into result, you can parse it
+            //Now that you have the xml data into result, you can parse it
             Currency thisCurrency = null;
             try {
                 XmlPullParserFactory factory =
@@ -275,7 +356,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 while (eventType != XmlPullParser.END_DOCUMENT)
                 {
                     if(eventType == XmlPullParser.START_TAG) // Found a start tag
-                    {   // Check which start Tag we have as we'd do different things
+                    {   //Check which start Tag we have as we'd do different things
                         if (xpp.getName().equalsIgnoreCase("item"))
                         {
                             insideAnItem = true;
@@ -285,20 +366,19 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                         }
                         else if (xpp.getName().equalsIgnoreCase("title"))
                         {
-                            // Now just get the associated text
+                            //Now just get the associated text
                             String temp = xpp.nextText();
                             //if  "description" tag is inside an item, or not
                             if(insideAnItem){ //the parser is currently inside an item block
                                 temp = temp.substring(temp.indexOf("/")+1);
                                 thisCurrency.setName(temp);
                                 thisCurrency.setCode(temp.substring(temp.indexOf("(")+1,temp.indexOf(")")));
-                                thisCurrency.setLatLon(thisCurrency.getCode());
-                                Log.d("MyTag","Item name : " + temp);
+
                             }
                         }
                         else if (xpp.getName().equalsIgnoreCase("description"))
                         {
-                            // Now just get the associated text
+                            //Now just get the associated text
                             String temp = xpp.nextText();
                             double thisRate = 0.0;
                             if(insideAnItem){ //the parser is currently inside an item block
@@ -311,12 +391,13 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                                 thisCurrency.setRate(thisRate);
                                 thisCurrency.setColour(thisRate);
 
+
                                 Log.d("MyTag","Description is " + temp);
                             }
                         }
                         else if (xpp.getName().equalsIgnoreCase("pubDate"))
                         {
-                            // Now just get the associated text
+                            //Now just get the associated text
                             String temp = xpp.nextText();
                             if(insideAnItem){ //the parser is currently inside an item block
                                 thisCurrency.setPubDate(temp);
@@ -324,22 +405,29 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                             }
                         }
                     }
-                    else if(eventType == XmlPullParser.END_TAG) // Found an end tag
+                    else if(eventType == XmlPullParser.END_TAG) //Found an end tag
                     {
                         if (xpp.getName().equalsIgnoreCase("item"))
                         {
+                            //ensure object has been read correctly and then finally set the coordinates
+                            if (thisCurrency != null) {
+                                setCoordinates(thisCurrency);
+                            }
                             currencies.add(thisCurrency); //add to collection
                             insideAnItem = false;
                             Log.d("MyTag","Item parsing completed!");
                         }
                     }
-                    eventType = xpp.next(); // Get the next event  before looping again
-                } // End of while
+
+
+                    eventType = xpp.next(); //Get the next event  before looping again
+                } //End of while
             } catch (XmlPullParserException e) {
                 Log.e("Parsing","EXCEPTION" + e);
             } catch (IOException e) {
                 Log.e("Parsing","I/O EXCEPTION");
             }
+
 
             mHandler.post(new Runnable(){
                 @Override
@@ -350,6 +438,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                         rawDataDisplay.setText("Error: Failed to parse data.");
                         return;
                     }
+                    //update the LiveData in the ViewModel therefore triggering the observers and updating the adapter
                     currencyViewModel.setCurrencies(currencies);
                 }
             });

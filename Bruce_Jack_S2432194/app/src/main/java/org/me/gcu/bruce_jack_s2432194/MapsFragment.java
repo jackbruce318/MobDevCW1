@@ -1,10 +1,12 @@
 package org.me.gcu.bruce_jack_s2432194;
 
-import androidx.fragment.app.FragmentActivity;
-import androidx.lifecycle.ViewModelProvider;
 
 import android.os.Bundle;
-
+import android.view.View;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -12,45 +14,47 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import org.me.gcu.bruce_jack_s2432194.databinding.ActivityMapsFragmentBinding;
 
-public class MapsFragment extends FragmentActivity implements OnMapReadyCallback {
+public class MapsFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private ActivityMapsFragmentBinding binding;
     private CurrencyViewModel currencyViewModel;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-        binding = ActivityMapsFragmentBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        //Get map fragment
+        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        //requireActivity() will return the activity the fragment is associated with (only one activity anyway)
+        //and share the ViewModel
+        currencyViewModel = new ViewModelProvider(requireActivity()).get(CurrencyViewModel.class);
 
-        currencyViewModel = new ViewModelProvider(this).get(CurrencyViewModel.class);
-
-        currencyViewModel.getSelectedCurrency().observe(this, currency -> {
+        //Observe the selected currency
+        currencyViewModel.getSelectedCurrency().observe(getViewLifecycleOwner(), currency -> {
+            //Will run every time a new currency is selected
             if (mMap != null && currency != null) {
-                mMap.clear();
+                mMap.clear(); //Clear previous marker
                 LatLng location = new LatLng(currency.getLatitude(), currency.getLongitude());
                 mMap.addMarker(new MarkerOptions().position(location).title(currency.getName()));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 10));
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 6f)); //Zoom in on the location
             }
         });
     }
 
     @Override
-    public void onMapReady(GoogleMap googleMap) {
+    public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
+    }
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    @Nullable
+    @Override
+    public android.view.View onCreateView(@NonNull android.view.LayoutInflater inflater, @Nullable android.view.ViewGroup container, @Nullable android.os.Bundle savedInstanceState) {
+        //inflate layout
+        return inflater.inflate(R.layout.activity_maps_fragment, container, false);
     }
 }

@@ -1,8 +1,6 @@
 package org.me.gcu.bruce_jack_s2432194;
 
-import androidx.core.content.ContextCompat;
 
-import java.util.Date;
 
 //based on rss feed it must have: title, publishing date, description (shows us the rate)
 public class Currency {
@@ -88,26 +86,15 @@ public class Currency {
         }
     }
 
-    public void setLatLon(String code) {
-        switch (code) {
-            case "USD":
-                this.latitude = 40.7128;
-                this.longitude = -74.0060;
-                break;
-            case "EUR":
-                this.latitude = 48.8566;
-                this.longitude = 2.3522;
-                break;
-            case "JPY":
-                this.latitude = 35.6895;
-                this.longitude = 139.6917;
-                break;
-            default:
-                this.latitude = 0;
-                this.longitude = 0;
-                break;
-        }
+    public void setLatitude(double latitude){
+        this.latitude = latitude;
     }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+
+
 
     @Override
 
