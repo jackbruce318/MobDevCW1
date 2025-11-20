@@ -22,18 +22,15 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import android.os.Handler;
-
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -44,7 +41,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import android.widget.SearchView;
 import android.widget.ViewSwitcher;
 
@@ -85,6 +81,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     private DecimalFormat df;
     private Handler mHandler;
     private ArrayList<Currency> mainList;
+    private FrameLayout mainsContainer;
+    private MainsFragment mainsFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,6 +112,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         FragmentTransaction transaction1 = manager1.beginTransaction();
         transaction1.replace(R.id.mapFragment, mapsFragment);
         transaction1.commit();
+
+        mainsFragment = new MainsFragment();
+        FragmentManager manager2 = getSupportFragmentManager();
+        FragmentTransaction transaction2 = manager2.beginTransaction();
+        transaction2.replace(R.id.mainsContainer, mainsFragment);
+        transaction2.commit();
 
         //list page widgets and variables
         myListView = (ListView) findViewById(R.id.countryListView);

@@ -23,15 +23,14 @@ public class CustomAdapter extends BaseAdapter implements Filterable{
 
     public CustomAdapter(Context applicationContext, List<Currency> countryList) {
         this.context = applicationContext;
-        this.cntryList = countryList;
-        this.filteredCntryList = countryList;
-        //this.pics = images;
+        this.cntryList = countryList != null ? countryList : new ArrayList<>();
+        this.filteredCntryList = this.cntryList;
         inflter = (LayoutInflater.from(applicationContext));
     }
 
     @Override
     public int getCount() {
-        return filteredCntryList.size();
+        return filteredCntryList != null ? filteredCntryList.size() : 0;
     }
 
     @Override
@@ -51,19 +50,17 @@ public class CustomAdapter extends BaseAdapter implements Filterable{
             view = inflter.inflate(R.layout.layout_listview, null);
             holder = new CustomAdapter.WidgetsHolder();
             holder.name = (TextView) view.findViewById(R.id.textView);
-            //holder.pic = (ImageView) view.findViewById(R.id.icon);
             view.setTag(holder); //store bound objects into the view
         }
         else{ //already existing, just reuse bound objects
             holder = (CustomAdapter.WidgetsHolder)view.getTag();
         }
         holder.name.setText(filteredCntryList.get(i).getName());
-        //holder.pic.setImageResource(pics[i]);
         return view;
     }
+
     static class WidgetsHolder { //preserve objects bound to widgets
         TextView name;
-        //ImageView pic;
     }
 
     @Override
@@ -72,16 +69,19 @@ public class CustomAdapter extends BaseAdapter implements Filterable{
             @Override
             protected FilterResults performFiltering(CharSequence constraint) {
                 FilterResults results = new FilterResults();
-                String query = constraint.toString().toLowerCase().trim(); //cut out spaces and turn all lowercase
+
+                if (cntryList == null) {
+                    results.values = new ArrayList<>();
+                    return results;
+                }
+
+                String query = constraint.toString().toLowerCase().trim();
 
                 if (query.isEmpty()) {
-                    //If nothing in search bar, just show full list
                     results.values = cntryList;
                 } else {
                     List<Currency> filtered = new ArrayList<>();
                     for (Currency currency : cntryList) {
-
-                        //search for currency name or code (contained in name or description)
                         if (currency.getName().toLowerCase().contains(query) ||
                                 currency.getDescription().toLowerCase().contains(query)) {
                             filtered.add(currency);
@@ -94,19 +94,19 @@ public class CustomAdapter extends BaseAdapter implements Filterable{
 
             @Override
             protected void publishResults(CharSequence constraint, FilterResults results) {
-                //update list with filtered data
-                filteredCntryList = (List<Currency>) results.values;
-                //tell listview to refresh
+                if (results != null && results.values != null) {
+                    filteredCntryList = (List<Currency>) results.values;
+                } else {
+                    filteredCntryList = new ArrayList<>();
+                }
                 notifyDataSetChanged();
             }
         };
     }
 
     public void updateData(List<Currency> newCurrencyList) {
-        //update original and filtered lists
-        this.cntryList = newCurrencyList;
-        this.filteredCntryList = newCurrencyList;
-        //tell adapter that data has changed so listview must refresh
+        this.cntryList = newCurrencyList != null ? newCurrencyList : new ArrayList<>();
+        this.filteredCntryList = this.cntryList;
         notifyDataSetChanged();
     }
 }

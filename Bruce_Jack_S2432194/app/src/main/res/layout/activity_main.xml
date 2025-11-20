@@ -20,6 +20,13 @@
                 android:text="Select a Currency"
                 android:textSize="20sp" />
 
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:id="@+id/mainsContainer"
+                />
+
+
             <SearchView
                 android:id="@+id/searchView"
                 android:layout_width="match_parent"
@@ -116,6 +123,7 @@
 
 
         </LinearLayout>
+
 
 
         <Button
