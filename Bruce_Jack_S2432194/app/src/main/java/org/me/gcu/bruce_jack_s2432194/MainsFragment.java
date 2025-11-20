@@ -2,6 +2,7 @@ package org.me.gcu.bruce_jack_s2432194;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 
 import androidx.annotation.NonNull;
@@ -11,11 +12,13 @@ import androidx.lifecycle.ViewModelProvider;
 
 import java.util.ArrayList;
 
-public class MainsFragment extends Fragment implements View.OnClickListener {
+public class MainsFragment extends Fragment implements View.OnClickListener, ListView.OnItemClickListener {
 
     private CurrencyViewModel currencyViewModel;
     private CustomAdapter adapter;
     private ListView lv;
+    private MainsInterface mainsInterface;
+
 
     @Nullable
     @Override
@@ -33,6 +36,9 @@ public class MainsFragment extends Fragment implements View.OnClickListener {
         adapter = new CustomAdapter(requireContext(), new ArrayList<>());
         lv.setAdapter(adapter);
 
+        lv.setOnItemClickListener(this);
+
+
         //Get the ViewModel and observe the mainList
         currencyViewModel = new ViewModelProvider(requireActivity()).get(CurrencyViewModel.class);
 
@@ -49,7 +55,24 @@ public class MainsFragment extends Fragment implements View.OnClickListener {
 
     }
 
-    public interface MainFragmentListener {
-        void onInputSendCurrency(Currency input);
+    public void setInterface(MainsInterface mainsInterface){
+        this.mainsInterface = mainsInterface;
     }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        mainsInterface.itemSelected(parent, view, position, id);
+    }
+
+
+    public interface MapsInterface {
+        public void itemSelected(AdapterView<?> parent, View view, int position, long id);
+    }
+
+    public interface MainsInterface {
+        public void itemSelected(AdapterView<?> parent, View view, int position, long id);
+
+    }
+
+
 }

@@ -44,7 +44,7 @@ import java.util.List;
 import android.widget.SearchView;
 import android.widget.ViewSwitcher;
 
-public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener, TextWatcher {
+public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener, TextWatcher, MainsFragment.MainsInterface {
     private TextView rawDataDisplay;
 
     //conversion page widgets
@@ -119,6 +119,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         transaction2.replace(R.id.mainsContainer, mainsFragment);
         transaction2.commit();
 
+        mainsFragment.setInterface(this);
+
         //list page widgets and variables
         myListView = (ListView) findViewById(R.id.countryListView);
         myListView.setOnItemClickListener(this);
@@ -148,6 +150,10 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         if (currencyViewModel.getCurrencyList().isEmpty()) {
             startProgress();
         }
+    }
+
+    public void itemSelected(AdapterView<?> parent, View view, int position, long id){
+        onItemClick(parent, view, position,id);
     }
 
     public void onClick(View aview)
