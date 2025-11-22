@@ -34,6 +34,13 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         //and share the ViewModel
         currencyViewModel = new ViewModelProvider(requireActivity()).get(CurrencyViewModel.class);
 
+
+    }
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        mMap = googleMap;
+
         //Observe the selected currency
         currencyViewModel.getSelectedCurrency().observe(getViewLifecycleOwner(), currency -> {
             //Will run every time a new currency is selected
@@ -44,11 +51,6 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 6f)); //Zoom in on the location
             }
         });
-    }
-
-    @Override
-    public void onMapReady(@NonNull GoogleMap googleMap) {
-        mMap = googleMap;
     }
 
     @Nullable

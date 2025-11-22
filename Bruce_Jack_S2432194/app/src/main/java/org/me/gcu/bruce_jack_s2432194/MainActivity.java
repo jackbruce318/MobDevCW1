@@ -175,8 +175,23 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             }
         });
 
+        //observer for current ViewSwitcher page
         currencyViewModel.getCurrentView().observe(this, viewNo ->{
             switcher.setDisplayedChild(viewNo);
+        });
+
+        //observers for conversion page data
+        currencyViewModel.getConvLeftText().observe(this, text ->{
+            convLeftTv.setText(text);
+        });
+        currencyViewModel.getConvRightText().observe(this, text ->{
+            convRightTv.setText(text);
+        });
+        currencyViewModel.getConvResultText().observe(this, text ->{
+            convResultTv.setText(text);
+        });
+        currencyViewModel.getConvEditText().observe(this, text ->{
+            convEditText.setText(text);
         });
 
         //only fetch data if ViewModel is empty (e.g screen has not been rotated)
@@ -206,14 +221,15 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             //swap the widget text contents around
             String temp1 = convLeftTv.getText().toString();
             String temp2 = convRightTv.getText().toString();
-            convLeftTv.setText(temp2);
-            convRightTv.setText(temp1);
+
+            currencyViewModel.setConvLeftText(temp2);
+            currencyViewModel.setConvRightText(temp1);
 
             //preserve the current conversion values
             temp1 = convEditText.getText().toString();
             temp2 = convResultTv.getText().toString();
-            convEditText.setText(temp2);
-            convResultTv.setText(temp1);
+            currencyViewModel.setConvEditText(temp2);
+            currencyViewModel.setConvResultText(temp1);
         }
     }
 

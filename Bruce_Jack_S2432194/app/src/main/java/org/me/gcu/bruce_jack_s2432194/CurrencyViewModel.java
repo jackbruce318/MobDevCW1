@@ -14,6 +14,13 @@ public class CurrencyViewModel extends ViewModel {
     private final MutableLiveData<Currency> selectedCurrency = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentView = new MutableLiveData<>(0);
 
+    //LiveData for conversion page UI
+    private final MutableLiveData<String> convLeftText = new MutableLiveData<>();
+    private final MutableLiveData<String> convRightText = new MutableLiveData<>();
+    private final MutableLiveData<String> convEditText = new MutableLiveData<>();
+    private final MutableLiveData<String> convResultText = new MutableLiveData<>();
+
+
     private final MutableLiveData<ArrayList<Currency>> mainList = new MutableLiveData<>(new ArrayList<>());
     public LiveData<ArrayList<Currency>> getCurrencies() {
         return currencies;
@@ -44,6 +51,12 @@ public class CurrencyViewModel extends ViewModel {
         return currentView;
     }
 
+    public LiveData<String> getConvLeftText() { return convLeftText; }
+    public LiveData<String> getConvRightText() { return convRightText; }
+    public LiveData<String> getConvEditText() { return convEditText; }
+    public LiveData<String> getConvResultText() { return convResultText; }
+
+
     public void setCurrentView(int view){
         currentView.setValue(view);
     }
@@ -52,4 +65,9 @@ public class CurrencyViewModel extends ViewModel {
     public void setMainList(ArrayList<Currency> mainList){
         this.mainList.setValue(mainList);
     }
+
+    public void setConvLeftText(String text) { convLeftText.setValue(text); }
+    public void setConvRightText(String text) { convRightText.setValue(text); }
+    public void setConvEditText(String text) { convEditText.setValue(text); }
+    public void setConvResultText(String text) { convResultText.setValue(text); }
 }
