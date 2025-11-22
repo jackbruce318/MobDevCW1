@@ -146,6 +146,39 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             customAdapter.updateData(currencies);
         });
 
+        // Observe for changes in the selected currency
+        currencyViewModel.getSelectedCurrency().observe(this, currency -> {
+            if (currency != null) {
+                currentCurrency = currency;
+                //use toString() to display basic currency information
+                rawDataDisplay.setText(currency.toString());
+                double rate = currency.getRate();
+
+                //get the int identifier for color resources here
+                @SuppressLint("DiscouragedApi") int colourId = getResources().getIdentifier(currency.getColour(), "color", getPackageName());
+                rawDataDisplay.setTextColor(ContextCompat.getColor(this, colourId));
+
+                //Once again get int identifier for images
+                @SuppressLint("DiscouragedApi") int flagId = getResources().getIdentifier(currency.getCode().toLowerCase(), "drawable", getPackageName());
+                if (flagId != 0) {
+                    flagImageView.setImageResource(flagId);
+                } else {
+                    Log.w("Error", "Resource Not Found ");
+                    flagImageView.setImageResource(0);
+                }
+
+
+                convLeftTv.setText("GBP");
+                convRightTv.setText(currency.getCode());
+                convResultTv.setText(String.valueOf(currency.getRate()));
+                convEditText.setText("1");
+            }
+        });
+
+        currencyViewModel.getCurrentView().observe(this, viewNo ->{
+            switcher.setDisplayedChild(viewNo);
+        });
+
         //only fetch data if ViewModel is empty (e.g screen has not been rotated)
         if (currencyViewModel.getCurrencyList().isEmpty()) {
             startProgress();
@@ -162,6 +195,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         if (aview.getId() == R.id.btnSwitch || aview.getId() == R.id.btnGoBack){
             //only two views so we can just make use of the circular nature of the ViewSwitcher
             switcher.showNext();
+            currencyViewModel.setCurrentView(switcher.getDisplayedChild());
+
         }
         //if user presses button to swap currencies on conversion page
         else if (aview.getId() == R.id.btnSwap){
@@ -184,45 +219,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Object clickedObject = parent.getItemAtPosition(position);
-        currentCurrency = (Currency) clickedObject;
-
+        Currency clickedCurrency = (Currency) parent.getItemAtPosition(position);
         //set the clicked currency as the current currency in the ViewModel
-        currencyViewModel.selectCurrency(currentCurrency);
-
-        //round to two dp
-        df.format(currentCurrency.getRate());
-
-
-        if (currentCurrency != null) {
-
-            //use toString() to display basic currency information
-            rawDataDisplay.setText(currentCurrency.toString());
-            double rate = currentCurrency.getRate();
-
-            //get the int identifier for color resources here
-            //data annotation is because Android Studio does NOT like this logic
-            @SuppressLint("DiscouragedApi") int colourId = getResources().getIdentifier(currentCurrency.getColour(), "color", getPackageName());
-            rawDataDisplay.setTextColor(ContextCompat.getColor(this, colourId));
-
-            //Once again get int identifier for images
-            @SuppressLint("DiscouragedApi") int flagId = getResources().getIdentifier(currentCurrency.getCode().toLowerCase(), "drawable", getPackageName());
-            if (flagId != 0) {
-                flagImageView.setImageResource(flagId);
-            } else {
-                Log.w("Error", "Resource Not Found ");
-                flagImageView.setImageResource(0);
-            }
-
-
-            convLeftTv.setText("GBP");
-            convRightTv.setText(currentCurrency.getCode());
-            convResultTv.setText(String.valueOf(currentCurrency.getRate()));
-            convEditText.setText("1");
-        } else {
-            //null handler
-            Log.e("MainActivity", "Clicked object at position " + position + " is null.");
-        }
+        currencyViewModel.selectCurrency(clickedCurrency);
     }
 
     @Override
@@ -233,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        // This is called every time the user types a character
+        //This is called every time the user types a character
         if (customAdapter != null) {
             customAdapter.getFilter().filter(newText);
         }
@@ -278,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
     public void startProgress()
     {
         mHandler = new Handler();
-        // Run network access on a separate thread;
+        //Run network access on a separate thread;
         new Thread(new Task(urlSource)).start();
     }
 
@@ -384,19 +383,20 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                         }
                         else if (xpp.getName().equalsIgnoreCase("title"))
                         {
-                            //Now just get the associated text
+                            // Now just get the associated text
                             String temp = xpp.nextText();
                             //if  "description" tag is inside an item, or not
                             if(insideAnItem){ //the parser is currently inside an item block
                                 temp = temp.substring(temp.indexOf("/")+1);
                                 thisCurrency.setName(temp);
                                 thisCurrency.setCode(temp.substring(temp.indexOf("(")+1,temp.indexOf(")")));
-
+                                setCoordinates(thisCurrency);
+                                Log.d("MyTag","Item name : " + temp);
                             }
                         }
                         else if (xpp.getName().equalsIgnoreCase("description"))
                         {
-                            //Now just get the associated text
+                            // Now just get the associated text
                             String temp = xpp.nextText();
                             double thisRate = 0.0;
                             if(insideAnItem){ //the parser is currently inside an item block
@@ -409,13 +409,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                                 thisCurrency.setRate(thisRate);
                                 thisCurrency.setColour(thisRate);
 
-
                                 Log.d("MyTag","Description is " + temp);
                             }
                         }
                         else if (xpp.getName().equalsIgnoreCase("pubDate"))
                         {
-                            //Now just get the associated text
+                            // Now just get the associated text
                             String temp = xpp.nextText();
                             if(insideAnItem){ //the parser is currently inside an item block
                                 thisCurrency.setPubDate(temp);
@@ -423,36 +422,33 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                             }
                         }
                     }
-                    else if(eventType == XmlPullParser.END_TAG) //Found an end tag
+                    else if(eventType == XmlPullParser.END_TAG) // Found an end tag
                     {
                         if (xpp.getName().equalsIgnoreCase("item"))
-                        {
-                            //ensure object has been read correctly
+                        {//ensure object has been read correctly
                             if (thisCurrency != null) {
                                 //if this currency's code is in the list of main currencies
                                 if (mainCurrenciesList.contains(thisCurrency.getCode().toLowerCase())) {
-                                    thisCurrency.setIsMain(true); //set main to true
                                     mainList.add(thisCurrency); //add to main list
                                 }
 
                                 //and then finally set the coordinates
                                 setCoordinates(thisCurrency);
                             }
+
+
                             currencies.add(thisCurrency); //add to collection
                             insideAnItem = false;
                             Log.d("MyTag","Item parsing completed!");
                         }
                     }
-
-
-                    eventType = xpp.next(); //Get the next event  before looping again
-                } //End of while
+                    eventType = xpp.next(); // Get the next event  before looping again
+                } // End of while
             } catch (XmlPullParserException e) {
                 Log.e("Parsing","EXCEPTION" + e);
             } catch (IOException e) {
                 Log.e("Parsing","I/O EXCEPTION");
             }
-
 
             mHandler.post(new Runnable(){
                 @Override
@@ -463,7 +459,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                         rawDataDisplay.setText("Error: Failed to parse data.");
                         return;
                     }
-                    //update the LiveData in the ViewModel therefore triggering the observers and updating the adapter
                     currencyViewModel.setCurrencies(currencies);
                     currencyViewModel.setMainList(mainList);
                 }

@@ -12,6 +12,8 @@ public class CurrencyViewModel extends ViewModel {
     private final MutableLiveData<ArrayList<Currency>> currencies = new MutableLiveData<>();
     private ArrayList<Currency> currencyList = new ArrayList<>();
     private final MutableLiveData<Currency> selectedCurrency = new MutableLiveData<>();
+    private final MutableLiveData<Integer> currentView = new MutableLiveData<>(0);
+
     private final MutableLiveData<ArrayList<Currency>> mainList = new MutableLiveData<>(new ArrayList<>());
     public LiveData<ArrayList<Currency>> getCurrencies() {
         return currencies;
@@ -37,6 +39,15 @@ public class CurrencyViewModel extends ViewModel {
     public LiveData<ArrayList<Currency>> getMainList(){
         return mainList;
     }
+
+    public LiveData<Integer> getCurrentView(){
+        return currentView;
+    }
+
+    public void setCurrentView(int view){
+        currentView.setValue(view);
+    }
+
 
     public void setMainList(ArrayList<Currency> mainList){
         this.mainList.setValue(mainList);
