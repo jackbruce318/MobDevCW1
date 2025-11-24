@@ -1,31 +1,27 @@
 <ViewSwitcher xmlns:android="http://schemas.android.com/apk/res/android"
-
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
     android:id="@+id/vwSwitch"
-    >
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:padding="8dp">
 
-    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:paddingTop="25dp">
         <LinearLayout
-            android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent">
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginEnd="8dp">
 
             <TextView
                 android:id="@+id/acknowledgement"
-                android:layout_width="fill_parent"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Select a Currency"
                 android:textSize="20sp" />
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="300dp"
-                android:id="@+id/mainsContainer"
-                />
-
 
             <SearchView
                 android:id="@+id/searchView"
@@ -36,114 +32,157 @@
 
             <ListView
                 android:id="@+id/countryListView"
-                android:layout_width="fill_parent"
-                android:layout_height="290dp"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:divider="@color/material_blue_grey_800"
-                android:dividerHeight="1dp"
-                android:footerDividersEnabled="false" >
-            </ListView>
-
-            <TextView
-                android:id="@+id/rawDataDisplay"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text=""
-                android:paddingTop="25dp"
-                android:textSize="20sp"
-                android:background="@color/black"/>
-
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/btnSwitch"
-                android:text="Convert Currency"
-                android:textSize="20sp"
-                />
-
-            <ImageView
-                android:id="@+id/flagImageView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-            />
-
+                android:dividerHeight="1dp" />
 
         </LinearLayout>
 
-    </ScrollView>
+        <ScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:padding="8dp">
+
+                <FrameLayout
+                    android:id="@+id/mainsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"/>
+
+                <ImageView
+                    android:id="@+id/flagImageView"
+                    android:layout_width="120dp"
+                    android:layout_height="90dp"
+                    android:scaleType="centerInside"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/rawDataDisplay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@color/black"
+                    android:padding="8dp"
+                    android:text=""
+                    android:textSize="16sp"
+                    android:layout_marginBottom="16dp"/>
+
+                <Button
+                    android:id="@+id/btnSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Convert Currency"
+                    android:textSize="20sp" />
+            </LinearLayout>
+        </ScrollView>
+
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingTop="25dp"
-        >
-
-
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:padding="16dp">
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_marginEnd="16dp">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="GBP "
-                android:id="@+id/convLeftTextView"
-                />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
 
-            <EditText
+                <TextView
+                    android:id="@+id/convLeftTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GBP "
+                    android:textSize="18sp"/>
+
+                <EditText
+                    android:id="@+id/convEditText"
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="1"
+                    android:inputType="numberDecimal"
+                    android:gravity="center"/>
+
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/convEditText"
-                android:text="1"
-                android:inputType="number"/>
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
 
-            <TextView
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="is equal to"
+                    android:textSize="18sp"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:id="@+id/convResultTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginEnd="4dp"/>
+
+                <TextView
+                    android:id="@+id/convRightTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="18sp"/>
+
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=" is equal to "/>
+                android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=""
-                android:id="@+id/convRightTextView"/>
+                <Button
+                    android:id="@+id/btnSwap"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Swap"
+                    android:layout_marginEnd="8dp"/>
 
-            <TextView
-                android:id="@+id/convResultTextView"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="" />
-
-
+                <Button
+                    android:id="@+id/btnGoBack"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Go Back" />
+            </LinearLayout>
 
         </LinearLayout>
 
-
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Swap Currencies"
-            android:id="@+id/btnSwap"/>
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Go Back"
-            android:id="@+id/btnGoBack"
-            />
-
         <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
             android:id="@+id/mapFragment"
-            />
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
 
     </LinearLayout>
 
