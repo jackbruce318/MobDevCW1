@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import android.widget.SearchView;
+import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
 public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener, TextWatcher, MainsFragment.MainsInterface {
@@ -348,137 +349,157 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
             Log.d("MyTask","in run");
 
-            try
-            {
-                Log.d("MyTask","in try");
-                aurl = new URL(url);
-                yc = aurl.openConnection();
-                in = new BufferedReader(new InputStreamReader(yc.getInputStream()));
-                while ((inputLine = in.readLine()) != null){
-                    result = result + inputLine;
-                }
-                in.close();
-            }
-            catch (IOException ae) {
-                Log.e("MyTask", "ioexception");
-            }
-
-            //Clean up any leading garbage characters
-            int i = result.indexOf("<?"); //initial tag
-            result = result.substring(i);
-
-            //Clean up any trailing garbage at the end of the file
-            i = result.indexOf("</rss>"); //final tag
-            result = result.substring(0, i + 6);
-
-            //Now that you have the xml data into result, you can parse it
-            Currency thisCurrency = null;
-            try {
-                XmlPullParserFactory factory =
-                        XmlPullParserFactory.newInstance();
-                factory.setNamespaceAware(true);
-                XmlPullParser xpp = factory.newPullParser();
-                xpp.setInput( new StringReader( result ) );
-
-                int eventType = xpp.getEventType();
-                boolean insideAnItem = false; //flag indicating when the parser is traversing a new item
-
-                String[] mainCurrencyCodes = getResources().getStringArray(R.array.main_currencies);
-                List<String> mainCurrenciesList = Arrays.asList(mainCurrencyCodes);
-
-                while (eventType != XmlPullParser.END_DOCUMENT)
+            while (true){
+                try
                 {
-                    if(eventType == XmlPullParser.START_TAG) // Found a start tag
-                    {   //Check which start Tag we have as we'd do different things
-                        if (xpp.getName().equalsIgnoreCase("item"))
-                        {
-                            insideAnItem = true;
-                            //Start a new Thing object
-                            thisCurrency = new Currency();
-                            Log.d("MyTag","New Item found!");
-                        }
-                        else if (xpp.getName().equalsIgnoreCase("title"))
-                        {
-                            // Now just get the associated text
-                            String temp = xpp.nextText();
-                            //if  "description" tag is inside an item, or not
-                            if(insideAnItem){ //the parser is currently inside an item block
-                                temp = temp.substring(temp.indexOf("/")+1);
-                                thisCurrency.setName(temp);
-                                thisCurrency.setCode(temp.substring(temp.indexOf("(")+1,temp.indexOf(")")));
-                                setCoordinates(thisCurrency);
-                                Log.d("MyTag","Item name : " + temp);
-                            }
-                        }
-                        else if (xpp.getName().equalsIgnoreCase("description"))
-                        {
-                            // Now just get the associated text
-                            String temp = xpp.nextText();
-                            double thisRate = 0.0;
-                            if(insideAnItem){ //the parser is currently inside an item block
-                                thisCurrency.setDescription(temp);
-
-                                int beginIndex = temp.indexOf("= ") + 2;
-                                int endIndex = temp.indexOf(" ", beginIndex);
-
-                                thisRate = Double.parseDouble(temp.substring(beginIndex, endIndex));
-                                thisCurrency.setRate(thisRate);
-                                thisCurrency.setColour(thisRate);
-
-                                Log.d("MyTag","Description is " + temp);
-                            }
-                        }
-                        else if (xpp.getName().equalsIgnoreCase("pubDate"))
-                        {
-                            // Now just get the associated text
-                            String temp = xpp.nextText();
-                            if(insideAnItem){ //the parser is currently inside an item block
-                                thisCurrency.setPubDate(temp);
-                                Log.d("MyTag","Publish date is " + temp);
-                            }
-                        }
+                    Log.d("MyTask","in try");
+                    aurl = new URL(url);
+                    yc = aurl.openConnection();
+                    in = new BufferedReader(new InputStreamReader(yc.getInputStream()));
+                    while ((inputLine = in.readLine()) != null){
+                        result = result + inputLine;
                     }
-                    else if(eventType == XmlPullParser.END_TAG) // Found an end tag
+                    in.close();
+                }
+                catch (IOException ae) {
+                    Log.e("MyTask", "ioexception");
+                }
+
+                //Clean up any leading garbage characters
+                int i = result.indexOf("<?"); //initial tag
+                result = result.substring(i);
+
+                //Clean up any trailing garbage at the end of the file
+                i = result.indexOf("</rss>"); //final tag
+                result = result.substring(0, i + 6);
+
+                //Now that you have the xml data into result, you can parse it
+                Currency thisCurrency = null;
+                currencies.clear();
+                mainList.clear();
+                try {
+                    XmlPullParserFactory factory =
+                            XmlPullParserFactory.newInstance();
+                    factory.setNamespaceAware(true);
+                    XmlPullParser xpp = factory.newPullParser();
+                    xpp.setInput( new StringReader( result ) );
+
+                    int eventType = xpp.getEventType();
+                    boolean insideAnItem = false; //flag indicating when the parser is traversing a new item
+
+                    String[] mainCurrencyCodes = getResources().getStringArray(R.array.main_currencies);
+                    List<String> mainCurrenciesList = Arrays.asList(mainCurrencyCodes);
+
+                    while (eventType != XmlPullParser.END_DOCUMENT)
                     {
-                        if (xpp.getName().equalsIgnoreCase("item"))
-                        {//ensure object has been read correctly
-                            if (thisCurrency != null) {
-                                //if this currency's code is in the list of main currencies
-                                if (mainCurrenciesList.contains(thisCurrency.getCode().toLowerCase())) {
-                                    mainList.add(thisCurrency); //add to main list
+                        if(eventType == XmlPullParser.START_TAG) // Found a start tag
+                        {   //Check which start Tag we have as we'd do different things
+                            if (xpp.getName().equalsIgnoreCase("item"))
+                            {
+                                insideAnItem = true;
+                                //Start a new Thing object
+                                thisCurrency = new Currency();
+                                Log.d("MyTag","New Item found!");
+                            }
+                            else if (xpp.getName().equalsIgnoreCase("title"))
+                            {
+                                // Now just get the associated text
+                                String temp = xpp.nextText();
+                                //if  "description" tag is inside an item, or not
+                                if(insideAnItem){ //the parser is currently inside an item block
+                                    temp = temp.substring(temp.indexOf("/")+1);
+                                    thisCurrency.setName(temp);
+                                    thisCurrency.setCode(temp.substring(temp.indexOf("(")+1,temp.indexOf(")")));
+                                    setCoordinates(thisCurrency);
+                                    Log.d("MyTag","Item name : " + temp);
+                                }
+                            }
+                            else if (xpp.getName().equalsIgnoreCase("description"))
+                            {
+                                // Now just get the associated text
+                                String temp = xpp.nextText();
+                                double thisRate = 0.0;
+                                if(insideAnItem){ //the parser is currently inside an item block
+                                    thisCurrency.setDescription(temp);
+
+                                    int beginIndex = temp.indexOf("= ") + 2;
+                                    int endIndex = temp.indexOf(" ", beginIndex);
+
+                                    thisRate = Double.parseDouble(temp.substring(beginIndex, endIndex));
+                                    thisCurrency.setRate(thisRate);
+                                    thisCurrency.setColour(thisRate);
+
+                                    Log.d("MyTag","Description is " + temp);
+                                }
+                            }
+                            else if (xpp.getName().equalsIgnoreCase("pubDate"))
+                            {
+                                // Now just get the associated text
+                                String temp = xpp.nextText();
+                                if(insideAnItem){ //the parser is currently inside an item block
+                                    thisCurrency.setPubDate(temp);
+                                    Log.d("MyTag","Publish date is " + temp);
+                                }
+                            }
+                        }
+                        else if(eventType == XmlPullParser.END_TAG) // Found an end tag
+                        {
+                            if (xpp.getName().equalsIgnoreCase("item"))
+                            {//ensure object has been read correctly
+                                if (thisCurrency != null) {
+                                    //if this currency's code is in the list of main currencies
+                                    if (mainCurrenciesList.contains(thisCurrency.getCode().toLowerCase())) {
+                                        mainList.add(thisCurrency); //add to main list
+                                    }
+
+                                    //and then finally set the coordinates
+                                    setCoordinates(thisCurrency);
                                 }
 
-                                //and then finally set the coordinates
-                                setCoordinates(thisCurrency);
+
+                                currencies.add(thisCurrency); //add to collection
+                                insideAnItem = false;
+                                Log.d("MyTag","Item parsing completed!");
                             }
-
-
-                            currencies.add(thisCurrency); //add to collection
-                            insideAnItem = false;
-                            Log.d("MyTag","Item parsing completed!");
                         }
+                        eventType = xpp.next(); // Get the next event  before looping again
+                    } // End of while
+                } catch (XmlPullParserException e) {
+                    Log.e("Parsing","EXCEPTION" + e);
+                } catch (IOException e) {
+                    Log.e("Parsing","I/O EXCEPTION");
+                }
+
+                mHandler.post(new Runnable(){
+                    @Override
+                    public void run(){
+                        Log.d("UI thread", "I am the UI thread");
+
+                        if (currencies.isEmpty()) {
+                            rawDataDisplay.setText("Error: Failed to parse data.");
+                            return;
+                        }
+
+
+                        currencyViewModel.setCurrencies(currencies);
+                        currencyViewModel.setMainList(mainList);
+                        Toast.makeText(MainActivity.this,"List Data Updated",
+                                Toast.LENGTH_SHORT).show();
                     }
-                    eventType = xpp.next(); // Get the next event  before looping again
-                } // End of while
-            } catch (XmlPullParserException e) {
-                Log.e("Parsing","EXCEPTION" + e);
-            } catch (IOException e) {
-                Log.e("Parsing","I/O EXCEPTION");
+                });
+
+
+
+                try{
+                    Thread.sleep(30000);
+                }
+                catch (InterruptedException e){
+                    Log.e("MyTask", "Interrupted Exception ", e);
+                }
+
             }
 
-            mHandler.post(new Runnable(){
-                @Override
-                public void run(){
-                    Log.d("UI thread", "I am the UI thread");
 
-                    if (currencies.isEmpty()) {
-                        rawDataDisplay.setText("Error: Failed to parse data.");
-                        return;
-                    }
-                    currencyViewModel.setCurrencies(currencies);
-                    currencyViewModel.setMainList(mainList);
-                }
-            });
         }
     }
 }
