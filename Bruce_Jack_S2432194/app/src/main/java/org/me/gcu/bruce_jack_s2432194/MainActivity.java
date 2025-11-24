@@ -9,7 +9,13 @@ package org.me.gcu.bruce_jack_s2432194;
 
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -22,6 +28,8 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
+
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
@@ -93,6 +101,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         //initialise the ViewModel
         currencyViewModel = new ViewModelProvider(this).get(CurrencyViewModel.class);
 
+        boolean networkAvailable = isNetworkAvailable();
+
         rawDataDisplay = (TextView)findViewById(R.id.rawDataDisplay);
 
         df = new DecimalFormat("#.##");
@@ -159,15 +169,12 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                 @SuppressLint("DiscouragedApi") int colourId = getResources().getIdentifier(currency.getColour(), "color", getPackageName());
                 rawDataDisplay.setTextColor(ContextCompat.getColor(this, colourId));
 
-                //Once again get int identifier for images
-                @SuppressLint("DiscouragedApi") int flagId = getResources().getIdentifier(currency.getCode().toLowerCase(), "drawable", getPackageName());
-                if (flagId != 0) {
-                    flagImageView.setImageResource(flagId);
-                } else {
-                    Log.w("Error", "Resource Not Found ");
-                    flagImageView.setImageResource(0);
+                try{
+                    flagImageView.setImageResource(currency.getFlagId());
                 }
-
+                catch (Exception e){
+                    Log.e("Error", "Resource Not Found ");
+                }
 
                 convLeftTv.setText("GBP");
                 convRightTv.setText(currency.getCode());
@@ -197,7 +204,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
         //only fetch data if ViewModel is empty (e.g screen has not been rotated)
         if (currencyViewModel.getCurrencyList().isEmpty()) {
-            startProgress();
+            if (networkAvailable) {startProgress();}
+            else {showtbDialog();}
         }
     }
 
@@ -291,11 +299,36 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         }
     }
 
-    public void startProgress()
-    {
-        mHandler = new Handler();
-        //Run network access on a separate thread;
-        new Thread(new Task(urlSource)).start();
+    private void showtbDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Connection Failed: Please Try Again Later"); //message
+        builder.setCancelable(false); //do not close if touching outside it
+        builder.setNeutralButton("Yes", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                MainActivity.this.finish(); //exits app
+            }
+        });
+
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    public void startProgress() {
+        mHandler = new Handler(Looper.getMainLooper());
+
+        Runnable periodicTask = new Runnable() {
+            @Override
+            public void run() {
+                //offload network access to a worker thread
+                new Thread(new Task(urlSource)).start();
+
+                //run this every minute
+                mHandler.postDelayed(this, 60000);
+            }
+        };
+
+        // Start the cycle for the first time immediately
+        mHandler.post(periodicTask);
     }
 
     //method to fetch the coordinates from the strings file and set the currency lat and long to these values
@@ -331,6 +364,18 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
         }
     }
 
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager != null) {
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.getActiveNetwork());
+            if (capabilities != null) {
+                return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+            }
+        }
+        return false;
+    }
+
 
 
     private class Task implements Runnable
@@ -346,11 +391,13 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             BufferedReader in = null;
             String inputLine = "";
             ArrayList<Currency> currencies = new ArrayList<>();
+            String result = "";
+
+
 
             Log.d("MyTask","in run");
 
-            while (true){
-                try
+            try
                 {
                     Log.d("MyTask","in try");
                     aurl = new URL(url);
@@ -361,9 +408,22 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                     }
                     in.close();
                 }
-                catch (IOException ae) {
+            catch (IOException ae) {
                     Log.e("MyTask", "ioexception");
-                }
+                    mHandler.post(new Runnable(){
+                        @Override
+                        public void run(){
+                            Log.d("UI thread", "I am the UI thread");
+                            showtbDialog();
+                        }
+                    });
+
+            }
+            catch (Exception e) {
+                Log.e("MyTask", "Exception", e);
+            }
+
+
 
                 //Clean up any leading garbage characters
                 int i = result.indexOf("<?"); //initial tag
@@ -454,6 +514,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
 
                                     //and then finally set the coordinates
                                     setCoordinates(thisCurrency);
+
+
                                 }
 
 
@@ -480,6 +542,15 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                             return;
                         }
 
+                        for (Currency thisCurrency : currencies){
+                            @SuppressLint("DiscouragedApi") int flagId = getResources().getIdentifier(thisCurrency.getCode().toLowerCase(), "drawable", getPackageName());
+                            if (flagId != 0) {
+                                thisCurrency.setFlagId(flagId);
+                            } else {
+                                Log.w("Error", "Resource Not Found ");
+                            }
+                        }
+
 
                         currencyViewModel.setCurrencies(currencies);
                         currencyViewModel.setMainList(mainList);
@@ -487,8 +558,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
-
-
 
                 try{
                     Thread.sleep(30000);
@@ -500,6 +569,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             }
 
 
-        }
+
     }
 }

@@ -50,17 +50,20 @@ public class CustomAdapter extends BaseAdapter implements Filterable{
             view = inflter.inflate(R.layout.layout_listview, null);
             holder = new CustomAdapter.WidgetsHolder();
             holder.name = (TextView) view.findViewById(R.id.textView);
+            holder.icon = view.findViewById(R.id.icon);
             view.setTag(holder); //store bound objects into the view
         }
         else{ //already existing, just reuse bound objects
             holder = (CustomAdapter.WidgetsHolder)view.getTag();
         }
+        holder.icon.setImageResource(filteredCntryList.get(i).getFlagId());
         holder.name.setText(filteredCntryList.get(i).getName());
         return view;
     }
 
     static class WidgetsHolder { //preserve objects bound to widgets
         TextView name;
+        ImageView icon;
     }
 
     @Override

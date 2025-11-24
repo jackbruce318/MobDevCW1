@@ -13,7 +13,7 @@ public class Currency {
     private String colour;
     private double latitude;
     private double longitude;
-    private boolean toThis;
+    private int flagId;
 
 
     public Currency(){
@@ -52,7 +52,7 @@ public class Currency {
         return longitude;
     }
 
-    public boolean getToThis(){return toThis;}
+    public int getFlagId(){return flagId;}
 
     public void setName(String name){
         this.name = name;
@@ -97,7 +97,10 @@ public class Currency {
         this.longitude = longitude;
     }
 
-    public void setToThis(boolean toThis){this.toThis = toThis;}
+    public void setFlagId(int flagId){
+        this.flagId = flagId;
+    }
+
 
     @Override
 
