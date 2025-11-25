@@ -202,7 +202,8 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             convEditText.setText(text);
         });
 
-        //only fetch data if ViewModel is empty (e.g screen has not been rotated)
+        //only fetch data if ViewModel is empty (e.g screen has not been rotated) and device is connected to
+        //internet
         if (currencyViewModel.getCurrencyList().isEmpty()) {
             if (networkAvailable) {startProgress();}
             else {showtbDialog();}
