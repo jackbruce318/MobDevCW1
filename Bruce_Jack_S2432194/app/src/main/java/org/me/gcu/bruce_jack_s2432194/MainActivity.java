@@ -1,118 +1,384 @@
 package org.me.gcu.bruce_jack_s2432194;
 
-
 //
 // Name                 Jack Bruce
 // Student ID           S2432194
 // Programme of Study   Software Development
 //
 
+
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
-import androidx.appcompat.app.AppCompatActivity;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
+import android.os.Handler;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Arrays;
+import java.util.List;
 import android.widget.SearchView;
+import android.widget.Toast;
+import android.widget.ViewSwitcher;
 
-import org.me.gcu.bruce_jack_s2432194.Currency;
-
-public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener {
+public class MainActivity extends AppCompatActivity implements OnClickListener, AdapterView.OnItemClickListener, SearchView.OnQueryTextListener, TextWatcher, MainsFragment.MainsInterface {
     private TextView rawDataDisplay;
 
+    //conversion page widgets
+    private TextView convLeftTv;
+    private TextView convRightTv;
+    private TextView convResultTv;
+    private EditText convEditText;
+    private Button btnGoBack;
+    private Button btnSwap;
     private String result;
-    private String url1="";
+
+    //components for the maps display
+    private MapsFragment mapsFragment;
+    private FrameLayout mapFrame;
+
+    private ViewSwitcher switcher;
+
+    //rss feed Strings
     private String urlSource="https://www.fx-exchange.com/gbp/rss.xml";
 
-    private ArrayList<Currency> currencies;
+    //main page variables and widgets
+    private CurrencyViewModel currencyViewModel;
 
     private ListView myListView;
-
-    private String[] names;
-
     private SearchView searchView;
+    private ImageView flagImageView;
 
     private CustomAdapter customAdapter;
+
+    private Button switchButton;
+
+    private Currency currentCurrency;
+
+    private DecimalFormat df;
+    private Handler mHandler;
+    private ArrayList<Currency> mainList;
+    private FrameLayout mainsContainer;
+    private MainsFragment mainsFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //initialise the ViewModel
+        currencyViewModel = new ViewModelProvider(this).get(CurrencyViewModel.class);
+
+        boolean networkAvailable = isNetworkAvailable();
+
         rawDataDisplay = (TextView)findViewById(R.id.rawDataDisplay);
 
-        currencies = new ArrayList<Currency>();
+        df = new DecimalFormat("#.##");
 
+        //Conversion page widgets
+        convLeftTv = (TextView)findViewById(R.id.convLeftTextView);
+        convRightTv = (TextView)findViewById(R.id.convRightTextView);
+        convResultTv = (TextView)findViewById(R.id.convResultTextView);
+        convEditText = (EditText)findViewById(R.id.convEditText);
+        btnGoBack = (Button)findViewById(R.id.btnGoBack);
+        btnGoBack.setOnClickListener(this);
+        btnSwap = (Button)findViewById(R.id.btnSwap);
+        btnSwap.setOnClickListener(this);
+        convEditText.addTextChangedListener(this);
+
+        mapsFragment = new MapsFragment();
+        FragmentManager manager1 = getSupportFragmentManager();
+        FragmentTransaction transaction1 = manager1.beginTransaction();
+        transaction1.replace(R.id.mapFragment, mapsFragment);
+        transaction1.commit();
+
+        mainsFragment = new MainsFragment();
+        FragmentManager manager2 = getSupportFragmentManager();
+        FragmentTransaction transaction2 = manager2.beginTransaction();
+        transaction2.replace(R.id.mainsContainer, mainsFragment);
+        transaction2.commit();
+
+        mainsFragment.setInterface(this);
+
+        //list page widgets and variables
         myListView = (ListView) findViewById(R.id.countryListView);
         myListView.setOnItemClickListener(this);
 
         searchView = (SearchView) findViewById(R.id.searchView);
         searchView.setOnQueryTextListener(this);
 
-        customAdapter = new CustomAdapter(getApplicationContext(), currencies);
+        flagImageView = (ImageView) findViewById(R.id.flagImageView);
+
+        switcher = (ViewSwitcher) findViewById(R.id.vwSwitch);
+
+        switchButton = (Button) findViewById(R.id.btnSwitch);
+        switchButton.setOnClickListener(this);
+
+        customAdapter = new CustomAdapter(getApplicationContext(), currencyViewModel.getCurrencyList());
         myListView.setAdapter(customAdapter);
 
-        startProgress();
+        mainList = new ArrayList<Currency>();
 
+        //observe for changes in the list of currencies
+        currencyViewModel.getCurrencies().observe(this, currencies -> {
+            //use lambda expression to pass newly fetched data to the adapter
+            customAdapter.updateData(currencies);
+        });
 
+        // Observe for changes in the selected currency
+        currencyViewModel.getSelectedCurrency().observe(this, currency -> {
+            if (currency != null) {
+                currentCurrency = currency;
+                //use toString() to display basic currency information
+                rawDataDisplay.setText(currency.toString());
+                double rate = currency.getRate();
 
+                //get the int identifier for color resources here
+                @SuppressLint("DiscouragedApi") int colourId = getResources().getIdentifier(currency.getColour(), "color", getPackageName());
+                rawDataDisplay.setTextColor(ContextCompat.getColor(this, colourId));
+
+                try{
+                    flagImageView.setImageResource(currency.getFlagId());
+                }
+                catch (Exception e){
+                    Log.e("Error", "Resource Not Found ");
+                }
+
+                convLeftTv.setText("GBP");
+                convRightTv.setText(currency.getCode());
+                convResultTv.setText(String.valueOf(currency.getRate()));
+                convEditText.setText("1");
+            }
+        });
+
+        //observer for current ViewSwitcher page
+        currencyViewModel.getCurrentView().observe(this, viewNo ->{
+            switcher.setDisplayedChild(viewNo);
+        });
+
+        //observers for conversion page data
+        currencyViewModel.getConvLeftText().observe(this, text ->{
+            convLeftTv.setText(text);
+        });
+        currencyViewModel.getConvRightText().observe(this, text ->{
+            convRightTv.setText(text);
+        });
+        currencyViewModel.getConvResultText().observe(this, text ->{
+            convResultTv.setText(text);
+        });
+        currencyViewModel.getConvEditText().observe(this, text ->{
+            convEditText.setText(text);
+        });
+
+        //only fetch data if ViewModel is empty (e.g screen has not been rotated) and device is connected to
+        //internet
+        if (currencyViewModel.getCurrencyList().isEmpty()) {
+            if (networkAvailable) {startProgress();}
+            else {showtbDialog();}
+        }
+    }
+
+    public void itemSelected(AdapterView<?> parent, View view, int position, long id){
+        onItemClick(parent, view, position,id);
     }
 
     public void onClick(View aview)
     {
+        //if the button pressed is either button meant for switching ViewSwitcher
+        if (aview.getId() == R.id.btnSwitch || aview.getId() == R.id.btnGoBack){
+            //only two views so we can just make use of the circular nature of the ViewSwitcher
+            switcher.showNext();
+            currencyViewModel.setCurrentView(switcher.getDisplayedChild());
 
-    }
+        }
+        //if user presses button to swap currencies on conversion page
+        else if (aview.getId() == R.id.btnSwap){
 
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Object clickedObject = parent.getItemAtPosition(position);
+            //maybe look at storing these in viewModel
 
-        if (clickedObject != null) {
-            rawDataDisplay.setText(currencies.get(position).toString());
-        } else {
-            //null handler
-            Log.e("MainActivity", "Clicked object at position " + position + " is null.");
+            //swap the widget text contents around
+            String temp1 = convLeftTv.getText().toString();
+            String temp2 = convRightTv.getText().toString();
+
+            currencyViewModel.setConvLeftText(temp2);
+            currencyViewModel.setConvRightText(temp1);
+
+            //preserve the current conversion values
+            temp1 = convEditText.getText().toString();
+            temp2 = convResultTv.getText().toString();
+            currencyViewModel.setConvEditText(temp2);
+            currencyViewModel.setConvResultText(temp1);
         }
     }
 
     @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        Currency clickedCurrency = (Currency) parent.getItemAtPosition(position);
+        //set the clicked currency as the current currency in the ViewModel
+        currencyViewModel.selectCurrency(clickedCurrency);
+    }
+
+    @Override
     public boolean onQueryTextSubmit(String query) {
-        // Not used, but required to implement
+        //Don't need to use this but it is required to implement the next method
         return false;
     }
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        // This is called every time the user types a character
+        //This is called every time the user types a character
         if (customAdapter != null) {
             customAdapter.getFilter().filter(newText);
         }
         return true;
     }
 
-    public void startProgress()
-    {
-        // Run network access on a separate thread;
-        new Thread(new Task(urlSource)).start();
-    } //
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        //Don't need to use this but it is required to implement the interface
+    }
 
-    // Need separate thread to access the internet resource over network
-    // Other neater solutions should be adopted in later iterations.
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+        //Don't need to use this but it is required to implement the interface
+    }
+
+    @Override
+    public void afterTextChanged(Editable s) {
+        if (currentCurrency != null && s.length() > 0) {
+            try {
+                double input = Double.parseDouble(s.toString());
+                double result;
+
+                //if we are converting INTO GBP
+                if(convRightTv.getText().toString().equals("GBP")){
+                    result = input / currentCurrency.getRate();
+                }
+                else{
+                    result = input * currentCurrency.getRate();
+                }
+
+                //round to two dp
+                convResultTv.setText(df.format(result));
+            } catch (NumberFormatException e) {
+                convResultTv.setText("Invalid Input");
+            }
+        } else if (s.length() == 0) {
+            convResultTv.setText("");
+        }
+    }
+
+    private void showtbDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Connection Failed: Please Try Again Later"); //message
+        builder.setCancelable(false); //do not close if touching outside it
+        builder.setNeutralButton("Yes", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                MainActivity.this.finish(); //exits app
+            }
+        });
+
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    public void startProgress() {
+        mHandler = new Handler(Looper.getMainLooper());
+
+        Runnable periodicTask = new Runnable() {
+            @Override
+            public void run() {
+                //offload network access to a worker thread
+                new Thread(new Task(urlSource)).start();
+
+                //run this every minute
+                mHandler.postDelayed(this, 60000);
+            }
+        };
+
+        // Start the cycle for the first time immediately
+        mHandler.post(periodicTask);
+    }
+
+    //method to fetch the coordinates from the strings file and set the currency lat and long to these values
+    //Currency class did not like this method being in it so it is now just a helper method
+    //called in the parsing thread
+    public void setCoordinates(Currency thisCurrency){
+        //make code lower because resource names must be lowercase
+        String currencyCode = thisCurrency.getCode().toLowerCase();
+
+        //get int identifier for coordinate item
+        @SuppressLint("DiscouragedApi")
+        int coordStringId = getResources().getIdentifier(currencyCode, "string", getPackageName());
+
+        if (coordStringId != 0) {
+            String coordinates = getString(coordStringId);
+
+            //split into latitude and longitude
+            String[] parts = coordinates.split(",");
+
+            //if parsed correctly it will be two parts
+            if (parts.length == 2) {
+                try {
+                    //parse into doubles and set values
+                    thisCurrency.setLatitude(Double.parseDouble(parts[0].trim()));
+                    thisCurrency.setLongitude(Double.parseDouble(parts[1].trim()));
+
+                } catch (NumberFormatException e) {
+                    Log.e("MainActivity", "Failed to parse coordinates for: " + currencyCode, e);
+                }
+            }
+        } else {
+            Log.w("MainActivity", "Coordinate string not found for currency: " + currencyCode);
+        }
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager != null) {
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.getActiveNetwork());
+            if (capabilities != null) {
+                return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+            }
+        }
+        return false;
+    }
+
+
+
     private class Task implements Runnable
     {
         private String url;
@@ -125,151 +391,185 @@ public class MainActivity extends AppCompatActivity implements OnClickListener, 
             URLConnection yc;
             BufferedReader in = null;
             String inputLine = "";
+            ArrayList<Currency> currencies = new ArrayList<>();
+            String result = "";
+
 
 
             Log.d("MyTask","in run");
 
             try
-            {
-                Log.d("MyTask","in try");
-                aurl = new URL(url);
-                yc = aurl.openConnection();
-                in = new BufferedReader(new InputStreamReader(yc.getInputStream()));
-                while ((inputLine = in.readLine()) != null){
-                    result = result + inputLine;
-                }
-                in.close();
-            }
-            catch (IOException ae) {
-                Log.e("MyTask", "ioexception");
-            }
-
-            //Clean up any leading garbage characters
-            int i = result.indexOf("<?"); //initial tag
-            result = result.substring(i);
-
-            //Clean up any trailing garbage at the end of the file
-            i = result.indexOf("</rss>"); //final tag
-            result = result.substring(0, i + 6);
-
-            // Now that you have the xml data into result, you can parse it
-            Currency thisCurrency = null;
-            try {
-                XmlPullParserFactory factory =
-                        XmlPullParserFactory.newInstance();
-                factory.setNamespaceAware(true);
-                XmlPullParser xpp = factory.newPullParser();
-                xpp.setInput( new StringReader( result ) );
-
-                //YOUR PARSING HERE!!!
-
-                int eventType = xpp.getEventType();
-                boolean insideAnItem = false; //flag indicating when the parser is traversing a new item
-
-
-                while (eventType != XmlPullParser.END_DOCUMENT)
                 {
-
-                    if(eventType == XmlPullParser.START_TAG) // Found a start tag
-                    {   // Check which start Tag we have as we'd do different things
-                        if (xpp.getName().equalsIgnoreCase("item"))
-                        {
-                            insideAnItem = true;
-                            //Start a new Thing object
-                            thisCurrency = new Currency();
-                            Log.d("MyTag","New Item found!");
-                        }
-                        else if (xpp.getName().equalsIgnoreCase("title"))
-                        {
-                            // Now just get the associated text
-                            String temp = xpp.nextText();
-                            //if  "description" tag is inside an item, or not
-                            if(insideAnItem){ //the parser is currently inside an item block
-                                temp = temp.substring(temp.indexOf("/")+1);
-                                thisCurrency.setName(temp);
-                                Log.d("MyTag","Item name : " + temp);
-                            }
-
-                        }
-                        else if (xpp.getName().equalsIgnoreCase("description"))
-                        {
-                            // Now just get the associated text
-                            String temp = xpp.nextText();
-                            double thisRate = 0.0;
-                            if(insideAnItem){ //the parser is currently inside a Thing block
-                                thisCurrency.setDescription(temp);
-
-                                int beginIndex = temp.indexOf("= ") + 2;
-                                int endIndex = temp.indexOf(" ", beginIndex);
-
-                                thisRate = Double.parseDouble(temp.substring(beginIndex, endIndex));
-                                thisCurrency.setRate(thisRate);
-
-                                Log.d("MyTag","Description is " + temp);
-                            }
-                        }
-                        else if (xpp.getName().equalsIgnoreCase("pubDate"))
-                        {
-                            // Now just get the associated text
-                            String temp = xpp.nextText();
-                            if(insideAnItem){ //the parser is currently inside a Thing block
-                                thisCurrency.setPubDate(temp);
-                                Log.d("MyTag","Publish date is " + temp);
-                            }
-                        }
-
+                    Log.d("MyTask","in try");
+                    aurl = new URL(url);
+                    yc = aurl.openConnection();
+                    in = new BufferedReader(new InputStreamReader(yc.getInputStream()));
+                    while ((inputLine = in.readLine()) != null){
+                        result = result + inputLine;
                     }
-                    else if(eventType == XmlPullParser.END_TAG) // Found an end tag
-                    {
-                        if (xpp.getName().equalsIgnoreCase("item"))
-                        {
-                            currencies.add(thisCurrency); //add to collection
-                            insideAnItem = false;
-                            Log.d("MyTag","Item parsing completed!");
+                    in.close();
+                }
+            catch (IOException ae) {
+                    Log.e("MyTask", "ioexception");
+                    mHandler.post(new Runnable(){
+                        @Override
+                        public void run(){
+                            Log.d("UI thread", "I am the UI thread");
+                            showtbDialog();
                         }
-                    }
+                    });
 
-
-
-
-                    eventType = xpp.next(); // Get the next event  before looping again
-                } // End of while
-
-
-
-            } catch (XmlPullParserException e) {
-                Log.e("Parsing","EXCEPTION" + e);
-                //throw new RuntimeException(e);
-            } catch (IOException e) {
-                Log.e("Parsing","I/O EXCEPTION" + e);
-                //throw new RuntimeException(e);
+            }
+            catch (Exception e) {
+                Log.e("MyTask", "Exception", e);
             }
 
 
-            MainActivity.this.runOnUiThread(new Runnable()
-            {
-                public void run() {
-                    Log.d("UI thread", "I am the UI thread");
+
+                //Clean up any leading garbage characters
+                int i = result.indexOf("<?"); //initial tag
+                result = result.substring(i);
+
+                //Clean up any trailing garbage at the end of the file
+                i = result.indexOf("</rss>"); //final tag
+                result = result.substring(0, i + 6);
+
+                //Now that you have the xml data into result, you can parse it
+                Currency thisCurrency = null;
+                currencies.clear();
+                mainList.clear();
+                try {
+                    XmlPullParserFactory factory =
+                            XmlPullParserFactory.newInstance();
+                    factory.setNamespaceAware(true);
+                    XmlPullParser xpp = factory.newPullParser();
+                    xpp.setInput( new StringReader( result ) );
+
+                    int eventType = xpp.getEventType();
+                    boolean insideAnItem = false; //flag indicating when the parser is traversing a new item
+
+                    String[] mainCurrencyCodes = getResources().getStringArray(R.array.main_currencies);
+                    List<String> mainCurrenciesList = Arrays.asList(mainCurrencyCodes);
+
+                    while (eventType != XmlPullParser.END_DOCUMENT)
+                    {
+                        if(eventType == XmlPullParser.START_TAG) // Found a start tag
+                        {   //Check which start Tag we have as we'd do different things
+                            if (xpp.getName().equalsIgnoreCase("item"))
+                            {
+                                insideAnItem = true;
+                                //Start a new Thing object
+                                thisCurrency = new Currency();
+                                Log.d("MyTag","New Item found!");
+                            }
+                            else if (xpp.getName().equalsIgnoreCase("title"))
+                            {
+                                // Now just get the associated text
+                                String temp = xpp.nextText();
+                                //if  "description" tag is inside an item, or not
+                                if(insideAnItem){ //the parser is currently inside an item block
+                                    temp = temp.substring(temp.indexOf("/")+1);
+                                    thisCurrency.setName(temp);
+                                    thisCurrency.setCode(temp.substring(temp.indexOf("(")+1,temp.indexOf(")")));
+                                    setCoordinates(thisCurrency);
+                                    Log.d("MyTag","Item name : " + temp);
+                                }
+                            }
+                            else if (xpp.getName().equalsIgnoreCase("description"))
+                            {
+                                // Now just get the associated text
+                                String temp = xpp.nextText();
+                                double thisRate = 0.0;
+                                if(insideAnItem){ //the parser is currently inside an item block
+                                    thisCurrency.setDescription(temp);
+
+                                    int beginIndex = temp.indexOf("= ") + 2;
+                                    int endIndex = temp.indexOf(" ", beginIndex);
+
+                                    thisRate = Double.parseDouble(temp.substring(beginIndex, endIndex));
+                                    thisCurrency.setRate(thisRate);
+                                    thisCurrency.setColour(thisRate);
+
+                                    Log.d("MyTag","Description is " + temp);
+                                }
+                            }
+                            else if (xpp.getName().equalsIgnoreCase("pubDate"))
+                            {
+                                // Now just get the associated text
+                                String temp = xpp.nextText();
+                                if(insideAnItem){ //the parser is currently inside an item block
+                                    thisCurrency.setPubDate(temp);
+                                    Log.d("MyTag","Publish date is " + temp);
+                                }
+                            }
+                        }
+                        else if(eventType == XmlPullParser.END_TAG) // Found an end tag
+                        {
+                            if (xpp.getName().equalsIgnoreCase("item"))
+                            {//ensure object has been read correctly
+                                if (thisCurrency != null) {
+                                    //if this currency's code is in the list of main currencies
+                                    if (mainCurrenciesList.contains(thisCurrency.getCode().toLowerCase())) {
+                                        mainList.add(thisCurrency); //add to main list
+                                    }
+
+                                    //and then finally set the coordinates
+                                    setCoordinates(thisCurrency);
 
 
-                    if (currencies.isEmpty()) {
-                        rawDataDisplay.setText("Error: Failed to parse data.");
-                        return;
-                    }
-
-                    if (customAdapter != null){
-                        customAdapter.updateData(currencies);
-                    }
+                                }
 
 
-
+                                currencies.add(thisCurrency); //add to collection
+                                insideAnItem = false;
+                                Log.d("MyTag","Item parsing completed!");
+                            }
+                        }
+                        eventType = xpp.next(); // Get the next event  before looping again
+                    } // End of while
+                } catch (XmlPullParserException e) {
+                    Log.e("Parsing","EXCEPTION" + e);
+                } catch (IOException e) {
+                    Log.e("Parsing","I/O EXCEPTION");
                 }
-            });
-        }
+
+                mHandler.post(new Runnable(){
+                    @Override
+                    public void run(){
+                        Log.d("UI thread", "I am the UI thread");
+
+                        if (currencies.isEmpty()) {
+                            rawDataDisplay.setText("Error: Failed to parse data.");
+                            return;
+                        }
+
+                        for (Currency thisCurrency : currencies){
+                            @SuppressLint("DiscouragedApi") int flagId = getResources().getIdentifier(thisCurrency.getCode().toLowerCase(), "drawable", getPackageName());
+                            if (flagId != 0) {
+                                thisCurrency.setFlagId(flagId);
+                            } else {
+                                Log.w("Error", "Resource Not Found ");
+                            }
+                        }
+
+
+                        currencyViewModel.setCurrencies(currencies);
+                        currencyViewModel.setMainList(mainList);
+                        Toast.makeText(MainActivity.this,"List Data Updated",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+                try{
+                    Thread.sleep(30000);
+                }
+                catch (InterruptedException e){
+                    Log.e("MyTask", "Interrupted Exception ", e);
+                }
+
+            }
+
+
 
     }
-
-
-
-
 }
